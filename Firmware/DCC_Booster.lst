@@ -1,0 +1,1029 @@
+DCC_Booster.asm                                                       Page: 1
+/Users/davidflynn/Projects/DCC Booster DMFE/DCC-Booster/Firmware/
+
+00001 0000 	;====================================================================================================
+00002 0000 	;
+00003 0000 	;    Filename:      DCC_Booster.asm
+00004 0000 	;    Date:          1/12/2020
+00005 0000 	;    File Version:  1.0d1
+00006 0000 	;
+00007 0000 	;    Author:        David M. Flynn
+00008 0000 	;    Company:       Oxford V.U.E., Inc.
+00009 0000 	;    E-Mail:        dflynn@oxfordvue.com
+00010 0000 	;    Web Site:      http://www.oxfordvue.com/
+00011 0000 	;
+00012 0000 	;====================================================================================================
+00013 0000 	;    DCC_Booster is the control and circuit breaker for a model railroar DCC booster.
+00014 0000 	;    Features and configurations will be added as needed.
+00015 0000 	;
+00016 0000 	;    Features: 	Current sensing.
+00017 0000 	;	
+00018 0000 	;
+00019 0000 	;    History:
+00020 0000 	; 1.0d1   1/12/2020	First code.
+00021 0000 	;
+00022 0000 	;====================================================================================================
+00023 0000 	; ToDo:
+00024 0000 	;
+00025 0000 	;
+00026 0000 	;====================================================================================================
+00027 0000 	;====================================================================================================
+00028 0000 	; What happens next:
+00029 0000 	;   At power up the system LED will blink.
+00030 0000 	;   Read current select switches, Norm/Rev switch, Test Switch and set mode/control bits.
+00031 0000 	;     Set direction bit.
+00032 0000 	;   DCC Signal valid? Set/Clear LED and Driver enable.
+00033 0000 	;   Monitor current and signal valid.
+00034 0000 	;     If over current or invalid signal disable driver, Error rate sys LED, clear dvr/sig LEDs.
+00035 0000 	;====================================================================================================
+00036 0000 	;
+00037 0000 	;   Pin 1 (RA2/AN2) SW5 (Active Low Input)
+00038 0000 	;   Pin 2 (RA3/AN3) DCC Polarity (Output)
+00039 0000 	;   Pin 3 (RA4/AN4) DCC Signal OK LED (Active High Output)
+00040 0000 	;   Pin 4 (RA5/MCLR*) VPP/MCLR*
+00041 0000 	;   Pin 5 (GND) Ground
+00042 0000 	;   Pin 6 (RB0) Current Select 0 (Active Low Input)
+00043 0000 	;   Pin 7 (RB1/AN11/SDA1) Current Select 1 (Active Low Input)
+00044 0000 	;   Pin 8 (RB2/AN10/TX) Current Select 2 (Active Low Input)
+00045 0000 	;   Pin 9 (RB3/CCP1) DCC Signal (Active High Input)
+00046 0000 	;
+00047 0000 	;   Pin 10 (RB4/AN8/SLC1) Normal/Reverse* (Active Low Input)
+00048 0000 	;   Pin 11 (RB5/AN7) Driver Status LED (Active High Output)
+00049 0000 	;   Pin 12 (RB6/AN5/CCP2) ICSPCLK
+00050 0000 	;   Pin 13 (RB7/AN6) ICSPDAT
+00051 0000 	;   Pin 14 (Vcc) +5 volts
+00052 0000 	;   Pin 15 (RA6) MOSFET Driver Enable (Active High Output)
+00053 0000 	;   Pin 16 (RA7/CCP2) System LED (Active Low Output)(System LED)
+00054 0000 	;   Pin 17 (RA0/AN0) Input voltage sensing analog input
+00055 0000 	;   Pin 18 (RA1/AN1) Current sensing analog input
+00056 0000 	;
+00057 0000 	;====================================================================================================
+00058 0000 	;
+00059 0000 	;
+00060 0000 		list	p=16f1847,r=hex,W=1	; list directive to define processor
+00001 0000 		nolist
+00002 0000 	;
+00003 0000 	;==========================================================================
+00004 0000 	;  MPASM PIC16F1847 processor include
+00005 0000 	; 
+00006 0000 	;  (c) Copyright 1999-2013 Microchip Technology, All rights reserved
+00007 0000 	;  Modified by DMF 11/16/2013
+00008 0000 	;==========================================================================
+00009 0000 	;
+01163 0000 		NOLIST
+01164 0000 	;
+00063 0000 		list
+00064 0000 	;
+00065 8007 EFA4 		__CONFIG _CONFIG1,_FOSC_INTOSC & _WDTE_OFF & _MCLRE_OFF & _IESO_OFF
+00066 0000 	;
+00067 0000 	;
+00068 0000 	; INTOSC oscillator: I/O function on CLKIN pin
+00069 0000 	; WDT disabled
+00070 0000 	; PWRT disabled
+00071 0000 	; MCLR/VPP pin function is digital input
+00072 0000 	; Program memory code protection is disabled
+00073 0000 	; Data memory code protection is disabled
+00074 0000 	; Brown-out Reset enabled
+00075 0000 	; CLKOUT function is disabled. I/O or oscillator function on the CLKOUT pin
+00076 0000 	; Internal/External Switchover mode is disabled
+00077 0000 	; Fail-Safe Clock Monitor is enabled
+00078 0000 	;
+00079 8008 DFFF 		__CONFIG _CONFIG2,_WRT_OFF & _PLLEN_ON & _LVP_OFF
+00080 0000 	;
+00081 0000 	; Write protection off
+00082 0000 	; 4x PLL Enabled
+00083 0000 	; Stack Overflow or Underflow will cause a Reset
+00084 0000 	; Brown-out Reset Voltage (Vbor), low trip point selected.
+00085 0000 	; Low-voltage programming enabled
+00086 0000 	;
+00087 0000 	; '__CONFIG' directive is used to embed configuration data within .asm file.
+00088 0000 	; The lables following the directive are located in the respective .inc file.
+00089 0000 	; See respective data sheet for additional information on configuration word.
+00090 0000 	;
+DCC_Booster.asm                                                       Page: 2
+/Users/davidflynn/Projects/DCC Booster DMFE/DCC-Booster/Firmware/
+
+00091 0000 		constant	oldCode=0
+00092 0000 		constant	useRS232=0
+00093 0000 		constant	UseEEParams=0
+00094 0000 	;
+00095 0000 	;
+00096 0000 0003 	#Define	_C	STATUS,C
+00097 0000 0003 	#Define	_Z	STATUS,Z
+00098 0000 	;
+00099 0000 	;====================================================================================================
+00102 0000 		nolist
+00103 0000 	;
+00104 0000 	;    Port A bits
+00105 0000 00A7 	PortADDRBits	EQU	b'10100111'
+00106 0000 0000 	PortAValue	EQU	b'00000000'
+00107 0000 0003 	ANSELA_Val	EQU	b'00000011'	;RA0/AN0, RA4/AN4
+00108 0000 	;
+00109 0000 000C 	#Define	RA0_In	PORTA,0	;Volts, Analog Input
+00110 0000 000C 	#Define	RA1_In	PORTA,1	;Current, Analog Input
+00111 0000 000C 	#Define	SW5_In	PORTA,2	;SW5
+00112 0000 010C 	#Define	DCC_Pole	LATA,3	;DCC Polarity (Output)
+00113 0000 010C 	#Define	SigOK_LED	LATA,4	;DCC Signal OK LED (Active High Output)
+00114 0000 000C 	#Define	RA5_In	PORTA,5	;VPP/MCLR*
+00115 0000 010C 	#Define	Drv_Enable	LATA,6	;MOSFET Driver Enable (Active High Output)
+00116 0000 000C 	#Define	RA7_In	PORTA,7	;System LED (Active Low Output)(System LED)
+00117 0000 0007 	SysLED_Bit	EQU	7	;System LED (Active Low Output)
+00118 0000 008C 	#Define	SysLED_Tris	TRISA,SysLED_Bit	;System LED (Active Low Output)
+00119 0000 	;
+00120 0000 00F8 	Servo_AddrDataMask	EQU	0xF8
+00121 0000 	;
+00122 0000 	;
+00123 0000 	;    Port B bits
+00124 0000 00DF 	PortBDDRBits	EQU	b'11011111'
+00125 0000 0011 	PortBValue	EQU	b'00010001'
+00126 0000 0000 	ANSELB_Val	EQU	b'00000000'	;RB5/AN7
+00127 0000 	;
+00128 0000 000D 	#Define	SW1_In	PORTB,0	;Current Select 0 (Active Low Input)
+00129 0000 000D 	#Define	SW2_In	PORTB,1	;Current Select 1 (Active Low Input)
+00130 0000 000D 	#Define	SW3_In	PORTB,2	;Current Select 2 (Active Low Input)
+00131 0000 000D 	#Define	RB3_In	PORTB,3	;CCP1 Input, DCC Signal (Active High Input)
+00132 0000 000D 	#Define	SW4_In	PORTB,4	;Normal/Reverse* (Active Low Input)
+00133 0000 010D 	#Define	Drv_StatusLED	LATB,5	;Driver Status LED (Active High Output)
+00134 0000 000D 	#Define	RB6_In	PORTB,6	;ICSPCLK
+00135 0000 000D 	#Define	RB7_In	PORTB,7	;ICSPDAT
+00136 0000 	;
+00137 0000 	;
+00138 0000 	;========================================================================================
+00139 0000 	;========================================================================================
+00140 0000 	;
+00141 0000 	;Constants
+00142 0000 00FF 	All_In	EQU	0xFF
+00143 0000 0000 	All_Out	EQU	0x00
+00144 0000 	;
+00145 0000 	;OSCCON_Value	EQU	b'01110010'	; 8 MHz
+00146 0000 00F0 	OSCCON_Value	EQU	b'11110000'	;32MHz
+00147 0000 	;
+00148 0000 	;T2CON_Value	EQU	b'01001110'	;T2 On, /16 pre, /10 post
+00149 0000 004F 	T2CON_Value	EQU	b'01001111'	;T2 On, /64 pre, /10 post
+00150 0000 007D 	PR2_Value	EQU	.125
+00151 0000 	;
+00152 0000 0064 	LEDTIME	EQU	d'100'	;1.00 seconds
+00153 0000 000A 	LEDErrorTime	EQU	d'10'
+00154 0000 0014 	LEDFastTime	EQU	d'20'
+00155 0000 	;
+00156 0000 	;T1CON_Val	EQU	b'00000001'	;Fosc=8MHz, PreScale=1,Fosc/4,Timer ON
+00157 0000 0021 	T1CON_Val	EQU	b'00100001'	;Fosc=32MHz, PreScale=4,Fosc/4,Timer ON
+00158 0000 	;
+00159 0000 	;
+00160 0000 	;
+00161 0000 	;================================================================================================
+00162 0000 	;***** VARIABLE DEFINITIONS
+00163 0000 	; there is 1K bytes of ram, Bank0 0x20..0x7F, Bank1 0xA0..0xEF .. Bank11 0x620..0x66F
+00164 0000 	; there are 256 bytes of EEPROM starting at 0x00 the EEPROM is not mapped into memory but
+00165 0000 	;  accessed through the EEADR and EEDATA registers
+00166 0000 	;================================================================================================
+00167 0000 	;  Bank0 Ram 020h-06Fh 80 Bytes
+00168 0000 	;
+00169 0000 		cblock	0x20
+00170 0000 	;
+00171 0000 0020 		SysLED_Time		;sys LED time
+00172 0000 0021 		SysLED_Blinks		;0=1 flash,1,2,3
+00173 0000 0022 		SysLED_BlinkCount
+00174 0000 0023 		SysLEDCount		;sys LED Timer tick count
+00175 0000 	;
+00176 0000 0024 		EEAddrTemp		;EEProm address to read or write
+00177 0000 0025 		EEDataTemp		;Data to be writen to EEProm
+00178 0000 	;
+00179 0000 0026 		Timer1Lo		;1st 16 bit timer
+00180 0000 0027 		Timer1Hi		; 50 mS RX timeiout
+00181 0000 0028 		Timer2Lo		;2nd 16 bit timer
+00182 0000 0029 		Timer2Hi		;
+00183 0000 002A 		Timer3Lo		;3rd 16 bit timer
+00184 0000 002B 		Timer3Hi		;GP wait timer
+00185 0000 002C 		Timer4Lo		;4th 16 bit timer
+00186 0000 002D 		Timer4Hi		; debounce timer
+00187 0000 	;
+00188 0000 002E 		SysFlags
+00189 0000 002F 		StatusFlags		
+00190 0000 	;
+00191 0000 		endc
+DCC_Booster.asm                                                       Page: 3
+/Users/davidflynn/Projects/DCC Booster DMFE/DCC-Booster/Firmware/
+
+00192 0000 	;--------------------------------------------------------------
+00193 0000 	;
+00194 0000 002E 	#Define	SW1_Flag	SysFlags,0
+00195 0000 002E 	#Define	SW2_Flag	SysFlags,1
+00196 0000 002E 	#Define	SW3_Flag	SysFlags,2
+00197 0000 002E 	#Define	SW4_Flag	SysFlags,3
+00198 0000 002E 	#Define                SW5_Flag               SysFlags,4
+00199 0000 	;
+00200 0000 002F 	#Define                DCC_ErrorFlag          StatusFlags,0
+00201 0000 	;
+00202 0000 	;================================================================================================
+00203 0000 	;  Bank1 Ram 0A0h-0EFh 80 Bytes
+00204 0000 		cblock	0x0A0
+00205 0000 	;
+00206 0000 00A0 		ANFlags
+00207 0000 00A1 		Cur_AN0:2		;IServo
+00208 0000 00A3 		Cur_AN1:2		;Battery Volts
+00209 0000 	;
+00210 0000 		endc
+00211 0000 	;
+00212 0000 00A1 	#Define	InputVolts	Cur_AN0
+00213 0000 00A3 	#Define	OuputCurrent	Cur_AN1
+00214 0000 	;
+00215 0000 	;---ANFlags bits---
+00216 0000 00A0 	#Define	NewDataAN0	ANFlags,0
+00217 0000 00A0 	#Define	NewDataAN1	ANFlags,1
+00218 0000 	;
+00219 0000 	;================================================================================================
+00220 0000 	;  Bank2 Ram 120h-16Fh 80 Bytes
+00221 0000 	;
+00222 0000 	;
+00223 0000 	;================================================================================================
+00224 0000 	;  Bank3 Ram 1A0h-1EFh 80 Bytes
+00225 0000 	;=========================================================================================
+00226 0000 	;  Bank5 Ram 2A0h-2EFh 80 Bytes
+00227 0000 	;
+00228 0000 		cblock	0x2A0
+00229 0000 02A0 		SigOutTime
+00230 0000 02A1 		SigOutTimeH
+00231 0000 02A2 		CalcdDwell
+00232 0000 02A3 		CalcdDwellH
+00233 0000 		endc
+00234 0000 	;
+00235 0000 	;=======================================================================================================
+00236 0000 	;  Common Ram 70-7F same for all banks
+00237 0000 	;      except for ISR_W_Temp these are used for paramiter passing and temp vars
+00238 0000 	;=======================================================================================================
+00239 0000 	;
+00240 0000 		cblock	0x70
+00241 0000 0070 		Param70
+00242 0000 0071 		Param71
+00243 0000 0072 		Param72
+00244 0000 0073 		Param73
+00245 0000 0074 		Param74
+00246 0000 0075 		Param75
+00247 0000 0076 		Param76
+00248 0000 0077 		Param77
+00249 0000 0078 		Param78
+00250 0000 0079 		Param79
+00251 0000 007A 		Param7A
+00252 0000 007B 		Param7B
+00253 0000 007C 		Param7C
+00254 0000 007D 		Param7D
+00255 0000 007E 		Param7E
+00256 0000 007F 		Param7F
+00257 0000 		endc
+00258 0000 	;
+00259 0000 	;=========================================================================================
+00260 0000 	;Conditions
+00261 0000 0080 	HasISR	EQU	0x80	;used to enable interupts 0x80=true 0x00=false
+00262 0000 	;
+00263 0000 	;=========================================================================================
+00264 0000 	;==============================================================================================
+00265 0000 	; ID Locations
+00266 0000 		__idlocs	0x10d1
+00267 0000 	;
+00268 0000 	;==============================================================================================
+00269 0000 	; EEPROM locations (NV-RAM) 0x00..0x7F (offsets)
+00270 0000 	;
+00271 0000 	;
+00272 0000 	;==============================================================================================
+00273 0000 	;============================================================================================
+00274 0000 	;
+00275 0000 	;
+00276 0000 		ORG	0x000	; processor reset vector
+00277 0000 018A 	ProgStartVector	CLRF	PCLATH
+00278 0001 0188 	                       CLRF	BSR	; bank0
+00279 0002 2891 	  	goto	start	; go to beginning of program
+00280 0003 	;
+00281 0003 	;===============================================================================================
+00282 0003 	; Interupt Service Routine
+00283 0003 	;
+00284 0003 	; we loop through the interupt service routing every 0.01 seconds
+00285 0003 	;
+00286 0003 	;
+00287 0003 		ORG	0x004	; interrupt vector location
+00288 0004 018A 		CLRF	PCLATH
+00289 0005 0188 		CLRF	BSR	; bank0
+00290 0006 	;
+DCC_Booster.asm                                                       Page: 4
+/Users/davidflynn/Projects/DCC Booster DMFE/DCC-Booster/Firmware/
+
+00291 0006 	;
+00292 0006 1C91 		BTFSS	PIR1,TMR2IF
+00293 0007 281A 		goto	SystemTick_end
+00294 0008 	;
+00295 0008 1091 		BCF	PIR1,TMR2IF	; reset interupt flag bit
+00296 0009 	;------------------
+00297 0009 	; These routines run 100 times per second
+00298 0009 	;
+00299 0009 	;------------------
+00300 0009 	;Decrement timers until they are zero
+00301 0009 	;
+00302 0009 2045 		call	DecTimer1	;if timer 1 is not zero decrement
+00303 000A 2043 		call	DecTimer2
+00304 000B 2041 		call	DecTimer3
+00305 000C 203F 		call	DecTimer4
+00306 000D 	;
+00307 000D 	;-----------------------------------------------------------------
+00308 000D 	; blink LEDs
+00309 000D 	;
+00310 000D 	; All LEDs off
+00311 000D 0021 		movlb	0x01	;bank 1
+00312 000E 178C 		bsf	SysLED_Tris
+00313 000F 	;
+00314 000F 	;
+00315 000F 0020 		movlb	0x00	;bank 0
+00316 0010 	;--------------------
+00317 0010 	; Sys LED time
+00318 0010 0BA3 		DECFSZ	SysLEDCount,F	;Is it time?
+00319 0011 3208 		bra	SystemBlink_end	; No, not yet
+00320 0012 	;
+00321 0012 08A1 		movf	SysLED_Blinks,F
+00322 0013 		SKPNZ		;Standard Blinking?
+00322 0013 1903      M		BTFSC	STATUS,Z		BTFSC	STATUS,Z
+00323 0014 3200 		bra	SystemBlink_Std	; Yes
+00324 0015 	;
+00325 0015 	; custom blinking
+00326 0015 	;
+00327 0015 01A2 	SystemBlink_Std	CLRF	SysLED_BlinkCount
+00328 0016 0820 		MOVF	SysLED_Time,W
+00329 0017 00A3 	SystemBlink_DoIt	MOVWF	SysLEDCount
+00330 0018 0021 		movlb	0x01	;bank 1
+00331 0019 138C 		bcf	SysLED_Tris	;LED ON
+00332 001A 	SystemBlink_end:
+00333 001A 	;--------------------
+00334 001A 	;
+00335 001A 	SystemTick_end:
+00336 001A 	;
+00337 001A 	;==================================================================================
+00338 001A 	;
+00339 001A 	; Handle CCP1 Interupt Flag, Enter w/ bank 0 selected
+00340 001A 	;
+00341 001A 0020 	IRQ_DCCSig	MOVLB	0	;bank 0
+00342 001B 1D11 		BTFSS	PIR1,CCP1IF
+00343 001C 3202 		bra	IRQ_DCCSig_End
+00344 001D 	;
+00345 001D 	;
+00346 001D 0020 	IRQ_DCCSig_Done	MOVLB	0x00
+00347 001E 1111 		BCF	PIR1,CCP1IF
+00348 001F 	IRQ_DCCSig_End:
+00349 001F 	;-----------------------------------------------------------------------------------------
+00350 001F 0009 		retfie		; return from interrupt
+00351 0020 	;
+00352 0020 	;
+00353 0020 	;=========================================================================================
+00354 0020 	;*****************************************************************************************
+00355 0020 	;=========================================================================================
+00356 0020 	;
+00357 0020 		include <F1847_Common.inc>
+00001 0020 	;=========================================================================================
+00002 0020 	; Commonly used routines PIC16F1847 version
+00003 0020 	;
+00004 0020 	;    Filename:      F1847 Common.inc
+00005 0020 	;    Date:          4/6/2019
+00006 0020 	;    File Version:  1.0.2
+00007 0020 	;
+00008 0020 	;    Author:        David M. Flynn
+00009 0020 	;    Company:       Oxford V.U.E., Inc.
+00010 0020 	;    E-Mail:        dflynn@oxfordvue.com
+00011 0020 	;    Web Site:      http://www.oxfordvue.com/
+00012 0020 	;
+00013 0020 	;=========================================================================================
+00014 0020 	;    History:
+00015 0020 	;
+00016 0020 	; 1.0.2  4/6/2019	Fixes to EERead/EEwrite
+00017 0020 	; 1.0.2 2/16/2019	Fix: added FSR0H to DecTimer.
+00018 0020 	; 1.0.1 11/21/2015	Updates DecTimer.
+00019 0020 	; 1.0   11/16/2013	Updated from F648A Common.inc
+00020 0020 	;
+00021 0020 	;=========================================================================================
+00022 0020 	; Routines:
+00023 0020 	;
+00024 0020 	; ClearRam	(2+0) Clears all RAM, call once before initializing variables, FSR0
+00025 0020 	; CopyToRam	(1+0) copy param memory (EEPROM) to ram, call once, FSR0
+00026 0020 	; SaveParams	(1+0) copy ram to param memory (EEPROM), FSR0
+00027 0020 	;
+00028 0020 	;  Set FSR0H before calling these routines
+00029 0020 	; DecTimer4	(0+0) Decrement routine for 16 bit timers, FSR0
+00030 0020 	; DecTimer3
+00031 0020 	; DecTimer2
+DCC_Booster.asm                                                       Page: 5
+/Users/davidflynn/Projects/DCC Booster DMFE/DCC-Booster/Firmware/
+
+00032 0020 	; DecTimer1
+00033 0020 	; DecTimer	(0+0) High byte of counter address in W
+00034 0020 	;
+00035 0020 	; TestT4_Zero	Test for 16 bit timers = zero
+00036 0020 	; TestT3_Zero	If Timer is zero return Z flag,1 else Z=0
+00037 0020 	; TestT2_Zero
+00038 0020 	; TestT1_Zero
+00039 0020 	;
+00040 0020 	; Delay10uS	(0+0)Delay uS    1 cycle = 1uS, 8Mhz clock version
+00041 0020 	; Delay100uS
+00042 0020 	; Delay40uS
+00043 0020 	; DelayWuS
+00044 0020 	;
+00045 0020 	; EEReadW	(0+0) Read EEPROM address in W
+00046 0020 	; EERead	(0+0) Read EEPROM address in EEAddrTemp
+00047 0020 	; EEWriteW	(0+0) Write EEPROM address in W, Data in EEDataTemp
+00048 0020 	; EEWrite	(0+0) Write EEPROM address in EEAdrTemp, Data in EEDataTemp, FSR0
+00049 0020 	;
+00050 0020 	;=========================================================================================
+00051 0020 		ifndef UseEEParams
+00053 0020 		endif
+00054 0020 	;=========================================================================================
+00055 0020 	; Clears all RAM
+00056 0020 	; Entry: none
+00057 0020 	; Exit: none
+00058 0020 	; RAM used: All
+00059 0020 	; Calls:(2+0) ClearRam_L2
+00060 0020 	;
+00061 0020 0020 	ClearRam	MOVLB	0x00
+00062 0021 305F 		MOVLW	0x5F	;Clear 20h-7Eh, 95 bytes
+00063 0022 00FF 		MOVWF	Param7F
+00064 0023 3020 		MOVLW	0x20
+00065 0024 0084 		MOVWF	FSR0
+00066 0025 0185 		CLRF	FSR0H
+00067 0026 203A 		CALL	ClearRam_L2
+00068 0027 	;
+00069 0027 3050 		MOVLW	0x50	;Clear A0h-EFh, 80 bytes
+00070 0028 00FF 		MOVWF	Param7F
+00071 0029 30A0 		MOVLW	0xA0
+00072 002A 0084 		MOVWF	FSR0
+00073 002B 203A 		CALL	ClearRam_L2
+00074 002C 	;
+00075 002C 0A85 		INCF	FSR0H,F	
+00076 002D 2031 		CALL	ClearRam_2	;Banks 2,3
+00077 002E 0A85 		INCF	FSR0H,F	
+00078 002F 2031 		CALL	ClearRam_2	;Banks 4,5
+00079 0030 0A85 		INCF	FSR0H,F	;Banks 6,7
+00080 0031 	;	
+00081 0031 3050 	ClearRam_2	MOVLW	0x50	;Clear 120h-16Fh, 80 bytes
+00082 0032 00FF 		MOVWF	Param7F
+00083 0033 3020 		MOVLW	0x20
+00084 0034 0084 		MOVWF	FSR0
+00085 0035 203A 		CALL	ClearRam_L2
+00086 0036 	;
+00087 0036 3050 		MOVLW	0x50	;Clear A0h-EFh, 80 bytes
+00088 0037 00FF 		MOVWF	Param7F
+00089 0038 30A0 		MOVLW	0xA0
+00090 0039 0084 		MOVWF	FSR0
+00091 003A 	;
+00092 003A 0180 	ClearRam_L2	CLRF	INDF0
+00093 003B 0A84 		INCF	FSR0,F
+00094 003C 0BFF 		DECFSZ	Param7F,F
+00095 003D 33FC 		bra	ClearRam_L2
+00096 003E 0008 		RETURN
+00097 003F 	;
+00098 003F 		if UseEEParams
+00134 003F 		endif
+00135 003F 	;=====================================================================================================
+00136 003F 	;=========================================================================================================
+00137 003F 	; Decrement routine for 16 bit timers
+00138 003F 	; Set FSR0H before calling these routines.
+00139 003F 	;
+00140 003F 302D 	DecTimer4	movlw	Timer4Hi
+00141 0040 3205 		bra	DecTimer
+00142 0041 302B 	DecTimer3	movlw	Timer3Hi
+00143 0042 3203 		bra	DecTimer
+00144 0043 3029 	DecTimer2	movlw	Timer2Hi
+00145 0044 3201 		bra	DecTimer
+00146 0045 3027 	DecTimer1	movlw	Timer1Hi
+00147 0046 	;DecTimer
+00148 0046 	; entry: FSR=Timer(n)Hi
+00149 0046 0084 	DecTimer	MOVWF	FSR0L
+00150 0047 3000 		movlw	High Timer4Hi
+00151 0048 0085 		movwf	FSR0H
+00152 0049 0013 		MOVIW	FSR0--	;TimerNHi
+00153 004A 0400 		IORWF	INDF0,W	;TimerNLo
+00154 004B 		SKPNZ
+00154 004B 1903      M		BTFSC	STATUS,Z		BTFSC	STATUS,Z
+00155 004C 0008 		RETURN
+00156 004D 3001 		MOVLW	0x01
+00157 004E 0280 		SUBWF	INDF0,F	;TimerNLo
+00158 004F 0A84 		INCF	FSR0L,F
+00159 0050 0103 		CLRW
+00160 0051 3B80 		SUBWFB	INDF0,F	;TimerNHi
+00161 0052 0008 		RETURN
+00162 0053 	;
+00163 0053 	;==============================================================================================
+00164 0053 	; Test for 16 bit timers = zero
+00165 0053 	;If Timer is zero return Z flag,1 else Z=0
+DCC_Booster.asm                                                       Page: 6
+/Users/davidflynn/Projects/DCC Booster DMFE/DCC-Booster/Firmware/
+
+00166 0053 	;
+00167 0053 0020 	TestT4_Zero	movlb	0
+00168 0054 082C 		movf	Timer4Lo,W
+00169 0055 042D 		iorwf	Timer4Hi,W
+00170 0056 0008 		return
+00171 0057 	;
+00172 0057 0020 	TestT3_Zero	movlb	0
+00173 0058 082A 		movf	Timer3Lo,W
+00174 0059 042B 		iorwf	Timer3Hi,W
+00175 005A 0008 		return
+00176 005B 	;
+00177 005B 0020 	TestT2_Zero	movlb	0
+00178 005C 0828 		movf	Timer2Lo,W
+00179 005D 0429 		iorwf	Timer2Hi,W
+00180 005E 0008 		return
+00181 005F 	;
+00182 005F 0020 	TestT1_Zero	movlb	0
+00183 0060 0826 		movf	Timer1Lo,W
+00184 0061 0427 		iorwf	Timer1Hi,W
+00185 0062 0008 		return	
+00186 0063 	;
+00187 0063 		if oldCode
+00203 0063 		endif
+00204 0063 	;======================================================================================
+00205 0063 	;Delay uS    1 cycle = .125uS, 32MHz clock version
+00206 0063 	; RAM used: Param77
+00207 0063 	; Calls:(0) none
+00208 0063 	;
+00209 0063 3005 	Delay10uS	MOVLW	0x05	;(2*3+5)/2=10
+00210 0064 3203 		bra	DelayWuS
+00211 0065 3041 	Delay100uS	MOVLW	d'65'	;(28*3+5)/2=100
+00212 0066 3201 		bra	DelayWuS
+00213 0067 3019 	Delay40uS	MOVLW	d'25'	;(11*3+5)=40
+00214 0068 00F7 	DelayWuS	MOVWF	Param77
+00215 0069 0000 	DelayWuS_Loop	nop
+00216 006A 0000 		nop
+00217 006B 0BF7 		DECFSZ	Param77,F
+00218 006C 33FC 		bra	DelayWuS_Loop
+00219 006D 0008 		RETURN
+00220 006E 	;==============================================================================================
+00221 006E 	; Read EEPROM
+00222 006E 	; entry: EEPROM address to read in W
+00223 006E 	;        Bank 0 selected
+00224 006E 	; exit: W=EEDATA, Bank 0 selected
+00225 006E 	;
+00226 006E 00A4 	EEReadW	movwf	EEAddrTemp
+00227 006F 	;
+00228 006F 	;==============================================================================================
+00229 006F 	; Read EEPROM
+00230 006F 	; entry: EEPROM address to read in EEAddrTemp
+00231 006F 	;        Bank 0 selected
+00232 006F 	; exit: W=EEDATA, Bank 0 selected
+00233 006F 	;
+00234 006F 0824 	EERead	movf	EEAddrTemp,W
+00235 0070 0023 		MOVLB	0x03	;Bank 3
+00236 0071 0091 		movwf	EEADR	;Address to read
+00237 0072 1315 		bcf	EECON1,CFGS	;not config mem
+00238 0073 1395 		bcf	EECON1,EEPGD	;Data memory
+00239 0074 1415 		bsf	EECON1,RD
+00240 0075 0813 		movf	EEDAT,W	;W=EEDAT
+00241 0076 0020 		MOVLB	0x00	;Bank 0
+00242 0077 0008 		return
+00243 0078 	;
+00244 0078 	;==============================================================================================
+00245 0078 	; Write EEPROM
+00246 0078 	; entry: EEPROM address to write in W
+00247 0078 	;        EEPROM data to write in EEDataTemp
+00248 0078 	;        Bank 0 selected
+00249 0078 	; exit: Bank 0 selected
+00250 0078 	;
+00251 0078 00A4 	EEWriteW	movwf	EEAddrTemp
+00252 0079 	;
+00253 0079 	;==============================================================================================
+00254 0079 	; Write EEPROM
+00255 0079 	; entry: EEPROM address to write in EEAdrTemp
+00256 0079 	;        EEPROM data to write in EEDataTemp
+00257 0079 	;        Bank 0 selected
+00258 0079 	; exit: Bank 0 selected
+00259 0079 	;
+00260 0079 0824 	EEWrite	MOVF	EEAddrTemp,W
+00261 007A 0023 		MOVLB	0x03	;Bank 3
+00262 007B 0091 		movwf	EEADR	;Address to write
+00263 007C 0020 		movlb	0x00	; bank 0
+00264 007D 0825 		movf	EEDataTemp,W
+00265 007E 0023 		movlb	0x03
+00266 007F 0093 		movwf	EEDAT
+00267 0080 1315 		bcf	EECON1,CFGS	;not config mem
+00268 0081 1395 		bcf	EECON1,EEPGD	;Data memory
+00269 0082 1515 		bsf	EECON1,WREN
+00270 0083 138B 		bcf	INTCON,GIE	;Disale Ints
+00271 0084 1B8B 		btfsc	INTCON,GIE
+00272 0085 33FD 		bra	$-2
+00273 0086 3055 		movlw	0x55
+00274 0087 0096 		movwf	EECON2	;write 55
+00275 0088 30AA 		movlw	0xAA
+00276 0089 0096 		movwf	EECON2	;write AA
+00277 008A 1495 		bsf	EECON1,WR
+00278 008B 1895 	EEWriteLoop	btfsc	EECON1,WR	
+00279 008C 33FE 		bra	EEWriteLoop
+DCC_Booster.asm                                                       Page: 7
+/Users/davidflynn/Projects/DCC Booster DMFE/DCC-Booster/Firmware/
+
+00280 008D 1115 		bcf	EECON1,WREN
+00281 008E 178B 		bsf	INTCON,GIE
+00282 008F 0020 		MOVLB	0x00	;Bank 0
+00283 0090 0008 		return
+00284 0091 	;
+00285 0091 	;	
+00286 0091 	;=========================================================================================
+00287 0091 	;=========================================================================================
+00288 0091 	;
+00289 0091 	;
+00290 0091 	;
+00291 0091 	;
+00358 0091 	;
+00359 0091 	;=========================================================================================
+00360 0091 	;
+00361 0091 20DE 	start	call	InitializeIO
+00362 0092 	;
+00363 0092 20D3 		CALL	ReadAN0_ColdStart
+00364 0093 	;
+00365 0093 	;=========================================================================================
+00366 0093 	;*****************************************************************************************
+00367 0093 	;=========================================================================================
+00368 0093 0064 	MainLoop	CLRWDT
+00369 0094 	;
+00370 0094 	;
+00371 0094 	; Fast blink the system LED if the output is disabled because of an error
+00372 0094 0020 		MOVLB	0x00
+00373 0095 3064 		MOVLW	LEDTIME
+00374 0096 182F 		btfsc	DCC_ErrorFlag
+00375 0097 300A 		movlw	LEDErrorTime
+00376 0098 00A0 		MOVWF	SysLED_Time
+00377 0099 	;
+00378 0099 209B 		CALL	ReadAN
+00379 009A 	;
+00380 009A 	;
+00381 009A 2893 		goto	MainLoop
+00382 009B 	;=========================================================================================
+00383 009B 	;*****************************************************************************************
+00384 009B 	;=========================================================================================
+00385 009B 	;
+00386 009B 	;=========================================================================================
+00387 009B 	; Setup or Read AN0 or Read AN4
+00388 009B 007C 	ANNumMask	EQU	0x7C
+00389 009B 0000 	AN0_Val	EQU	0x00
+00390 009B 0004 	AN1_Val	EQU	0x04
+00391 009B 0008 	AN2_Val	EQU	0x08
+00392 009B 000C 	AN3_Val	EQU	0x0C
+00393 009B 	;AN4_Val	EQU	0x10
+00394 009B 	;AN7_Val	EQU	0x1C
+00395 009B 	;
+00396 009B 0021 	ReadAN	MOVLB	1	;bank 1
+00397 009C 1C1D 		BTFSS	ADCON0,ADON	;Is the Analog input ON?
+00398 009D 3235 		BRA	ReadAN0_ColdStart	; No, go start it
+00399 009E 	;
+00400 009E 189D 		BTFSC	ADCON0,GO_NOT_DONE	;Conversion done?
+00401 009F 323C 		BRA	ReadAN_Rtn	; No
+00402 00A0 	;
+00403 00A0 3000 		movlw	HIGH Cur_AN0
+00404 00A1 0085 		movwf	FSR0H
+00405 00A2 081D 		movf	ADCON0,W
+00406 00A3 0020 		movlb	0x00	;bank 0
+00407 00A4 397C 		andlw	ANNumMask
+00408 00A5 		SKPNZ
+00408 00A5 1903      M		BTFSC	STATUS,Z		BTFSC	STATUS,Z
+00409 00A6 320C 		bra	ReadAN_AN0
+00410 00A7 	;
+00411 00A7 00F8 		movwf	Param78	;AN select bits
+00412 00A8 	;IServo
+00413 00A8 3000 	ReadAN_TryAN0	movlw	AN0_Val
+00414 00A9 0278 		subwf	Param78,W
+00415 00AA 		SKPNZ
+00415 00AA 1903      M		BTFSC	STATUS,Z		BTFSC	STATUS,Z
+00416 00AB 3207 		bra	ReadAN_AN0
+00417 00AC 	;
+00418 00AC 3000 		movlw	AN0_Val	;next to read
+00419 00AD 00F8 		movwf	Param78
+00420 00AE 30A1 		movlw	LOW Cur_AN0
+00421 00AF 0084 		movwf	FSR0L
+00422 00B0 0021  a		MOVLB	Cur_AN0	;banksel
+00421 00B1 		BankSel	Cur_AN0	;where the analog stuff is
+00423 00B1 1420 		bsf	NewDataAN0
+00424 00B2 3213 		bra	ReadAN_1
+00425 00B3 	;
+00426 00B3 30A1 	ReadAN_AN0	movlw	low Cur_AN0
+00427 00B4 0084 		movwf	FSR0L
+00428 00B5 0021  a		MOVLB	Cur_AN0	;banksel
+00427 00B6 		BankSel	Cur_AN0	;where the analog stuff is
+00429 00B6 1420 		bsf	NewDataAN0
+00430 00B7 3004 		movlw	AN1_Val	;next to read
+00431 00B8 00F8 		movwf	Param78
+00432 00B9 320C 		bra	ReadAN_1
+00433 00BA 	;
+00434 00BA 3008 	ReadAN_AN0_1	movlw	AN2_Val	;next to read
+00435 00BB 00F8 		movwf	Param78
+00436 00BC 3209 		bra	ReadAN_1
+00437 00BD 	;
+00438 00BD 300C 	ReadAN_AN0_2	movlw	AN3_Val	;next to read
+00439 00BE 00F8 		movwf	Param78
+00440 00BF 3206 		bra	ReadAN_1
+DCC_Booster.asm                                                       Page: 8
+/Users/davidflynn/Projects/DCC Booster DMFE/DCC-Booster/Firmware/
+
+00441 00C0 	;
+00442 00C0 3000 	ReadAN_AN0_3	movlw	AN0_Val	;next to read
+00443 00C1 00F8 		movwf	Param78
+00444 00C2 3203 		bra	ReadAN_1
+00445 00C3 	;
+00446 00C3 30A3 	ReadAN_AN1	movlw	low Cur_AN1
+00447 00C4 0084 		movwf	FSR0L
+00448 00C5 33F4 		bra	ReadAN_AN0_1
+00449 00C6 	;
+00450 00C6 	;
+00451 00C6 0021 	ReadAN_1	movlb	0x01	;bank 1
+00452 00C7 081B 		MOVF	ADRESL,W
+00453 00C8 001A 		MOVWI	FSR0++
+00454 00C9 081C 		MOVF	ADRESH,W
+00455 00CA 001A 		MOVWI	FSR0++
+00456 00CB 	;
+00457 00CB 0878 		movf	Param78,W
+00458 00CC 1409 		BSF	WREG,0	;ADC ON
+00459 00CD 009D 		MOVWF	ADCON0
+00460 00CE 3004 		movlw	0x04	;Acquisition time 5uS
+00461 00CF 2068 		call	DelayWuS
+00462 00D0 149D 		BSF	ADCON0,ADGO	;Start next conversion.
+00463 00D1 0020 		movlb	0x00	; bank 0
+00464 00D2 0008 		return
+00465 00D3 	;
+00466 00D3 0021 	ReadAN0_ColdStart	MOVLB	1
+00467 00D4 30E0 		MOVLW	b'11100000'	;Right Just, fosc/64
+00468 00D5 	;	MOVLW	b'11110000'	;Right Just, Frc
+00469 00D5 009E 		MOVWF	ADCON1
+00470 00D6 3000 		MOVLW	AN0_Val	;Select AN0
+00471 00D7 1409 		BSF	WREG,0	;ADC ON
+00472 00D8 009D 		MOVWF	ADCON0
+00473 00D9 3004 		movlw	0x04	;Acquisition time 5uS
+00474 00DA 2068 		call	DelayWuS
+00475 00DB 149D 	ReadAN_3	BSF	ADCON0,GO
+00476 00DC 	ReadAN_Rtn:
+00477 00DC 0020 	Bank0_Rtn	MOVLB	0
+00478 00DD 0008 		Return
+00479 00DE 	;
+00480 00DE 	;=========================================================================================
+00481 00DE 	;
+00482 00DE 	;=========================================================================================
+00483 00DE 	; call once
+00484 00DE 	;=========================================================================================
+00485 00DE 	;
+00486 00DE 0021 	InitializeIO	MOVLB	0x01	; select bank 1
+00487 00DF 1795 		bsf	OPTION_REG,NOT_WPUEN	; disable pullups on port B
+00488 00E0 1295 		bcf	OPTION_REG,TMR0CS	; TMR0 clock Fosc/4
+00489 00E1 1195 		bcf	OPTION_REG,PSA	; prescaler assigned to TMR0
+00490 00E2 1415 		bsf	OPTION_REG,PS0	;111 8mhz/4/256=7812.5hz=128uS/Ct=0.032768S/ISR
+00491 00E3 1495 		bsf	OPTION_REG,PS1	;101 8mhz/4/64=31250hz=32uS/Ct=0.008192S/ISR
+00492 00E4 1515 		bsf	OPTION_REG,PS2
+00493 00E5 	;
+00494 00E5 30F0 		MOVLW	OSCCON_Value
+00495 00E6 0099 		MOVWF	OSCCON
+00496 00E7 3017 		movlw	b'00010111'	; WDT prescaler 1:65536 period is 2 sec (RESET value)
+00497 00E8 0097 		movwf	WDTCON
+00498 00E9 	;
+00499 00E9 0024 		movlb	4	; bank 4
+00500 00EA 168C 		bsf	WPUA,WPUA5	;Put a pull up on the MCLR unused pin.
+00501 00EB 	;
+00502 00EB 0023 		MOVLB	0x03	; bank 3
+00503 00EC 3003 		movlw	ANSELA_Val
+00504 00ED 008C 		movwf	ANSELA
+00505 00EE 3000 		movlw	ANSELB_Val
+00506 00EF 008D 		movwf	ANSELB
+00507 00F0 	;
+00508 00F0 	;Setup T2 for 100/s
+00509 00F0 0020 		movlb	0	; bank 0
+00510 00F1 304F 		MOVLW	T2CON_Value
+00511 00F2 009C 		MOVWF	T2CON
+00512 00F3 307D 		MOVLW	PR2_Value
+00513 00F4 009B 		MOVWF	PR2
+00514 00F5 0021 		movlb	1	; bank 1
+00515 00F6 1491 		bsf	PIE1,TMR2IE	; enable Timer 2 interupt
+00516 00F7 	;
+00517 00F7 	; setup timer 1 for 0.5uS/count
+00518 00F7 	;
+00519 00F7 0020 		MOVLB	0x00	; bank 0
+00520 00F8 3021 		MOVLW	T1CON_Val
+00521 00F9 0098 		MOVWF	T1CON
+00522 00FA 1399 		bcf	T1GCON,TMR1GE	;always count
+00523 00FB 	;	
+00524 00FB 	; clear memory to zero
+00525 00FB 2020 		CALL	ClearRam
+00526 00FC 0064 		CLRWDT
+00527 00FD 	;	CALL	CopyToRam
+00528 00FD 	;
+00529 00FD 	;
+00530 00FD 	;
+00531 00FD 0020 		MOVLB	0x00	;Bank 0
+00532 00FE 	; setup data ports
+00533 00FE 3011 		movlw	PortBValue
+00534 00FF 008D 		movwf	PORTB	;init port B
+00535 0100 3000 		movlw	PortAValue
+00536 0101 008C 		movwf	PORTA
+00537 0102 0021 		MOVLB	0x01	; bank 1
+00538 0103 30A7 		movlw	PortADDRBits
+00539 0104 008C 		movwf	TRISA
+DCC_Booster.asm                                                       Page: 9
+/Users/davidflynn/Projects/DCC Booster DMFE/DCC-Booster/Firmware/
+
+00540 0105 30DF 		movlw	PortBDDRBits	;setup for programer
+00541 0106 008D 		movwf	TRISB
+00542 0107 	;
+00543 0107 0064 		CLRWDT
+00544 0108 	;-----------------------
+00545 0108 	;
+00546 0108 0020 		MOVLB	0x00
+00547 0109 3064 		MOVLW	LEDTIME
+00548 010A 00A0 		MOVWF	SysLED_Time
+00549 010B 3001 		movlw	0x01
+00550 010C 00A3 		movwf	SysLEDCount	;start blinking right away
+00551 010D 3064 		movlw	.100
+00552 010E 00AC 		movwf	Timer4Lo	;ignor buttons for 1st second
+00553 010F 	;
+00554 010F 	;
+00555 010F 0064 		CLRWDT
+00556 0110 	;
+00557 0110 	;
+00558 0110 170B 		bsf	INTCON,PEIE	; enable periferal interupts
+00559 0111 178B 		bsf	INTCON,GIE	; enable interupts
+00560 0112 	;
+00561 0112 0008 		return
+00562 0113 	;
+00563 0113 	;=========================================================================================
+00564 0113 	;=========================================================================================
+00565 0113 	;
+00566 0113 	;
+00567 0113 	;
+00568 0113 		END
+
+X-Ref Table
+ADCON0	009D 	ReadAN, ReadAN_1, ReadAN0_ColdStart
+ADCON1	009E 	ReadAN0_ColdStart
+ADGO	0001 	ReadAN_1
+ADON	0000 	ReadAN
+ADRESH	009C 	ReadAN_1
+ADRESL	009B 	ReadAN_1
+AN0_Val	0000 	ReadAN, ReadAN_AN0_1, ReadAN0_ColdStart
+AN1_Val	0004 	ReadAN_AN0
+AN2_Val	0008 	ReadAN_AN0_1
+AN3_Val	000C 	ReadAN_AN0_1
+ANFlags	00A0 	ReadAN, ReadAN_AN0
+ANNumMask	007C 	ReadAN
+ANSELA	018C 	InitializeIO
+ANSELA_Val	0003 	InitializeIO
+ANSELB	018D 	InitializeIO
+ANSELB_Val	0000 	InitializeIO
+BSR	0008 	
+CCP1IF	0002 	SystemBlink_end
+CFGS	0006 	DelayWuS_Loop
+ClearRam ^	0020 	InitializeIO
+ClearRam_2 ^	0031 	ClearRam
+ClearRam_L2 ^	003A 	ClearRam, ClearRam_2, ClearRam_L2
+Cur_AN0	00A1 	ReadAN, ReadAN_AN0
+Cur_AN1	00A3 	ReadAN_AN0_1
+DCC_ErrorFlag	StatusFlags,0	MainLoop
+DecTimer ^	0046 	DecTimer4, DecTimer3, DecTimer2
+DecTimer1 ^	0045 	
+DecTimer2 ^	0043 	
+DecTimer3 ^	0041 	
+DecTimer4 ^	003F 	
+DelayWuS ^	0068 	DecTimer, ReadAN_1, ReadAN0_ColdStart
+DelayWuS_Loop ^	0069 	DelayWuS_Loop
+EEADR	0191 	DelayWuS_Loop
+EEAddrTemp	0024 	DelayWuS_Loop
+EECON1	0195 	DelayWuS_Loop, EEWriteLoop
+EECON2	0196 	DelayWuS_Loop
+EEDAT	0193 	DelayWuS_Loop
+EEDataTemp	0025 	DelayWuS_Loop
+EEPGD	0007 	DelayWuS_Loop
+EEWriteLoop ^	008B 	EEWriteLoop
+F	0001 	, ClearRam, ClearRam_L2, DecTimer, DelayWuS_Loop
+FSR0	0004 	ClearRam, ClearRam_2, ClearRam_L2
+FSR0H	0005 	ClearRam, DecTimer, ReadAN
+FSR0L	0004 	DecTimer, ReadAN, ReadAN_AN0, ReadAN_AN0_1
+GIE	0007 	DelayWuS_Loop, EEWriteLoop, InitializeIO
+GO	0001 	ReadAN0_ColdStart
+GO_NOT_DONE	0001 	ReadAN
+INDF0	0000 	ClearRam_L2, DecTimer
+INTCON	000B 	DelayWuS_Loop, EEWriteLoop, InitializeIO
+IRQ_DCCSig_End ^	001F 	SystemBlink_end
+InitializeIO ^	00DE 	start
+LEDErrorTime	000A 	MainLoop
+LEDTIME	0064 	MainLoop, InitializeIO
+MainLoop ^	0093 	MainLoop
+NOT_WPUEN	0007 	InitializeIO
+NewDataAN0	ANFlags,0	ReadAN, ReadAN_AN0
+OPTION_REG	0095 	InitializeIO
+OSCCON	0099 	InitializeIO
+OSCCON_Value	00F0 	InitializeIO
+PCLATH	000A 	
+PEIE	0006 	InitializeIO
+PIE1	0091 	InitializeIO
+PIR1	0011 	, SystemBlink_end
+PORTA	000C 	InitializeIO
+PORTB	000D 	InitializeIO
+PR2	001B 	InitializeIO
+PR2_Value	007D 	InitializeIO
+PS0	0000 	InitializeIO
+DCC_Booster.asm   X-Ref Table                                            Page: 10
+/Users/davidflynn/Projects/DCC Booster DMFE/DCC-Booster/Firmware/
+
+PS1	0001 	InitializeIO
+PS2	0002 	InitializeIO
+PSA	0003 	InitializeIO
+Param77	0077 	DelayWuS, DelayWuS_Loop
+Param78	0078 	ReadAN, ReadAN_AN0, ReadAN_AN0_1, ReadAN_1
+Param7F	007F 	ClearRam, ClearRam_2, ClearRam_L2
+PortADDRBits	00A7 	InitializeIO
+PortAValue	0000 	InitializeIO
+PortBDDRBits	00DF 	InitializeIO
+PortBValue	0011 	InitializeIO
+RD	0000 	DelayWuS_Loop
+ReadAN ^	009B 	MainLoop
+ReadAN0_ColdStart ^	00D3 	start, ReadAN
+ReadAN_1 ^	00C6 	ReadAN, ReadAN_AN0, ReadAN_AN0_1
+ReadAN_AN0 ^	00B3 	ReadAN
+ReadAN_AN0_1 ^	00BA 	ReadAN_AN0_1
+ReadAN_Rtn ^	00DC 	ReadAN
+STATUS	0003 	, DecTimer, ReadAN
+StatusFlags	002F 	MainLoop
+SysLEDCount	0023 	, SystemBlink_Std, InitializeIO
+SysLED_Bit	0007 	, SystemBlink_Std
+SysLED_BlinkCount	0022 	SystemBlink_Std
+SysLED_Blinks	0021 	
+SysLED_Time	0020 	SystemBlink_Std, MainLoop, InitializeIO
+SysLED_Tris	TRISA,SysLED_Bit	, SystemBlink_Std
+SystemBlink_Std ^	0015 	
+SystemBlink_end ^	001A 	
+SystemTick_end ^	001A 	
+T1CON	0018 	InitializeIO
+T1CON_Val	0021 	InitializeIO
+T1GCON	0019 	InitializeIO
+T2CON	001C 	InitializeIO
+T2CON_Value	004F 	InitializeIO
+TMR0CS	0005 	InitializeIO
+TMR1GE	0007 	InitializeIO
+TMR2IE	0001 	InitializeIO
+TMR2IF	0001 	
+TRISA	008C 	, SystemBlink_Std, InitializeIO
+TRISB	008D 	InitializeIO
+Timer1Hi	0027 	DecTimer1, DecTimer
+Timer1Lo	0026 	DecTimer
+Timer2Hi	0029 	DecTimer2, DecTimer
+Timer2Lo	0028 	DecTimer
+Timer3Hi	002B 	DecTimer3, DecTimer
+Timer3Lo	002A 	DecTimer
+Timer4Hi	002D 	DecTimer4, DecTimer
+Timer4Lo	002C 	DecTimer, InitializeIO
+UseEEParams	0000 	ClearRam, DecTimer4
+W	0000 	SystemBlink_Std, DecTimer, DelayWuS_Loop, ReadAN, ReadAN_1
+WDTCON	0097 	InitializeIO
+WPUA	020C 	InitializeIO
+WPUA5	0005 	InitializeIO
+WR	0001 	DelayWuS_Loop, EEWriteLoop
+WREG	0009 	ReadAN_1, ReadAN0_ColdStart
+WREN	0002 	DelayWuS_Loop, EEWriteLoop
+Z	0002 	, DecTimer, ReadAN
+oldCode	0000 	DecTimer
+start ^	0091 	
+ 
+
+X-Ref Table (The UnCalled)
+Bank0_Rtn !	00DC 	
+Delay100uS !	0065 	
+Delay10uS !	0063 	
+Delay40uS !	0067 	
+EERead !	006F 	
+EEReadW !	006E 	
+EEWrite !	0079 	
+EEWriteW !	0078 	
+IRQ_DCCSig !	001A 	
+IRQ_DCCSig_Done !	001D 	
+ProgStartVector !	0000 	
+ReadAN_3 !	00DB 	
+ReadAN_AN0_2 !	00BD 	
+ReadAN_AN0_3 !	00C0 	
+ReadAN_AN1 !	00C3 	
+ReadAN_TryAN0 !	00A8 	
+SystemBlink_DoIt !	0017 	
+TestT1_Zero !	005F 	
+TestT2_Zero !	005B 	
+TestT3_Zero !	0057 	
+TestT4_Zero !	0053 	
+ 
+
+Memory Usage Map ('X' = Used, '-' = Unused)
+ 
+0000  : XXX-XXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0040  : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0080  : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+00C0  : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0100  : XXXXXXXXXXXXXXXX XXX------------- ---------------- ----------------
+ 
+Program Memory Words Used:274
+Program Memory Words Free:7918
+ 
+UserID
+8000  :XXXX
+ 
+Config
+DCC_Booster.asm   Memory Usage Map                                       Page: 11
+/Users/davidflynn/Projects/DCC Booster DMFE/DCC-Booster/Firmware/
+
+8007  :XX
+ 
+EEPROM
+ 
+Data EEPROM Bytes Used:0
+Data EEPROM Bytes Free:256

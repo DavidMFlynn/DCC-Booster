@@ -39,3 +39,7 @@ R3	6.8K 0805
 Notes:
 Changes for Rev A:
                        L1 Bigger Holes
+                       U8 to SOIC-18 package
+                       Remove J5
+                       Use stacked LEDs
+                       Make PCB smaller

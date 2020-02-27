@@ -409,16 +409,6 @@ ReadAN	MOVLB	1	;bank 1
 	bra	ReadAN_AN0
 ;
 	movwf	Param78	;AN select bits
-;Aux0 SW1_LED1
-	movlw	AN2_Val
-	subwf	Param78,W	;AN select bits
-	SKPNZ
-	bra	ReadAN_AN2
-;Aux1 SW2_LED2
-ReadAN_TryAN2	movlw	AN2_Val
-	subwf	Param78,W	;AN select bits
-	SKPNZ
-	bra	ReadAN_AN2
 ;IServo
 ReadAN_TryAN0	movlw	AN0_Val
 	subwf	Param78,W
@@ -439,26 +429,14 @@ ReadAN_AN0	movlw	low Cur_AN0
 	bsf	NewDataAN0
 	movlw	AN1_Val	;next to read
 	movwf	Param78
-	movf	ssAux0Config,W
-	andlw	0x0F
-	sublw	kAuxIOAnalogIn
-	SKPNZ
 	bra	ReadAN_1
 ;
 ReadAN_AN0_1	movlw	AN2_Val	;next to read
 	movwf	Param78
-	movf	ssAux1Config,W
-	andlw	0x0F
-	sublw	kAuxIOAnalogIn
-	SKPNZ
 	bra	ReadAN_1
 ;
 ReadAN_AN0_2	movlw	AN3_Val	;next to read
 	movwf	Param78
-	movf	ssAux2Config,W
-	andlw	0x0F
-	sublw	kAuxIOAnalogIn
-	SKPNZ
 	bra	ReadAN_1
 ;
 ReadAN_AN0_3	movlw	AN0_Val	;next to read
@@ -469,13 +447,6 @@ ReadAN_AN1	movlw	low Cur_AN1
 	movwf	FSR0L
 	bra	ReadAN_AN0_1
 ;
-ReadAN_AN2	movlw	low Cur_AN2
-	movwf	FSR0L
-	bra	ReadAN_AN0_2
-;
-ReadAN_AN3	movlw	low Cur_AN3
-	movwf	FSR0L
-	bra	ReadAN_AN0_3
 ;
 ReadAN_1	movlb	0x01	;bank 1
 	MOVF	ADRESL,W
@@ -553,18 +524,8 @@ InitializeIO	MOVLB	0x01	; select bank 1
 ; clear memory to zero
 	CALL	ClearRam
 	CLRWDT
-	CALL	CopyToRam
+;	CALL	CopyToRam
 ;
-; setup ccp1
-;
-	BSF	ServoOff
-;	BANKSEL	APFCON
-;	BSF	APFCON,CCP1SEL	;CCP1 on RA5
-	BANKSEL	CCP1CON
-	CLRF	CCP1CON
-;
-	MOVLB	0x01	;Bank 1
-	bsf	PIE1,CCP1IE
 ;
 ;
 	MOVLB	0x00	;Bank 0
