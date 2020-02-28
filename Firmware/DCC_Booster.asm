@@ -108,7 +108,7 @@ ANSELA_Val	EQU	b'00000011'	;RA0/AN0, RA4/AN4
 ;
 #Define	RA0_In	PORTA,0	;Volts, Analog Input
 #Define	RA1_In	PORTA,1	;Current, Analog Input
-#Define	SW5_In	PORTA,2	;SW5
+#Define	SW5_In	PORTA,2	;SW5 Test Mode
 #Define	DCC_Pole	LATA,3	;DCC Polarity (Output)
 #Define	SigOK_LED	LATA,4	;DCC Signal OK LED (Active High Output)
 #Define	RA5_In	PORTA,5	;VPP/MCLR*
@@ -179,25 +179,34 @@ T1CON_Val	EQU	b'00100001'	;Fosc=32MHz, PreScale=4,Fosc/4,Timer ON
 	Timer1Lo		;1st 16 bit timer
 	Timer1Hi		; 50 mS RX timeiout
 	Timer2Lo		;2nd 16 bit timer
-	Timer2Hi		;
+	Timer2Hi		; OverCurrentHold
 	Timer3Lo		;3rd 16 bit timer
-	Timer3Hi		;GP wait timer
+	Timer3Hi		; GP wait timer
 	Timer4Lo		;4th 16 bit timer
 	Timer4Hi		; debounce timer
 ;
 	SysFlags
-	StatusFlags		
+	StatusFlags
+	StatusFlags2		
 ;
 	endc
 ;--------------------------------------------------------------
 ;
-#Define	SW1_Flag	SysFlags,0
-#Define	SW2_Flag	SysFlags,1
-#Define	SW3_Flag	SysFlags,2
-#Define	SW4_Flag	SysFlags,3
-#Define                SW5_Flag               SysFlags,4
+#Define	SW1_Flag	SysFlags,0             ;Current Select 0 (Active Low Input)
+#Define	SW2_Flag	SysFlags,1             ;Current Select 1 (Active Low Input)
+#Define	SW3_Flag	SysFlags,2             ;Current Select 2 (Active Low Input)
+#Define	SW4_Flag	SysFlags,3             ;Normal/Reverse* (Active Low Input)
+#Define                SW5_Flag               SysFlags,4             ;SW5 Test Mode
 ;
 #Define                DCC_ErrorFlag          StatusFlags,0
+#Define                DCC_Sig1_Flag          StatusFlags,1          ;Set by DCC signal transition, Cleared by 0.01 Sec timer
+#Define                DCC_Sig2_Flag          StatusFlags,2          ;Set by DCC signal transition, Cleared by 0.01 Sec timer
+#Define                DCC_Sig_Lvl            StatusFlags,3          ;old signal level
+#Define                DCC_Sig_Active         StatusFlags,4          ;We have a DCC signal
+#Define                InVoltsOK              StatusFlags,5          ;Set when input volts are >= 13V
+;
+#Define                OutCurrentOK           StatusFlags2,0          ;Set when output current is OK
+#Define                OverCurrentHold        StatusFlags2,1
 ;
 ;================================================================================================
 ;  Bank1 Ram 0A0h-0EFh 80 Bytes
@@ -206,6 +215,7 @@ T1CON_Val	EQU	b'00100001'	;Fosc=32MHz, PreScale=4,Fosc/4,Timer ON
 	ANFlags
 	Cur_AN0:2		;IServo
 	Cur_AN1:2		;Battery Volts
+	MaxCurrent:2                                  ;Set from SW1..SW3 values
 ;
 	endc
 ;
@@ -215,6 +225,8 @@ T1CON_Val	EQU	b'00100001'	;Fosc=32MHz, PreScale=4,Fosc/4,Timer ON
 ;---ANFlags bits---
 #Define	NewDataAN0	ANFlags,0
 #Define	NewDataAN1	ANFlags,1
+;
+MinInVolts             EQU                    .640                   ;3.1V * 4.19v/v = 13v
 ;
 ;================================================================================================
 ;  Bank2 Ram 120h-16Fh 80 Bytes
@@ -331,6 +343,26 @@ SystemBlink_DoIt	MOVWF	SysLEDCount
 	bcf	SysLED_Tris	;LED ON
 SystemBlink_end:
 ;--------------------
+; DCC Signal sensing
+                       movlb                  0                      ;bank 0
+                       btfss                  DCC_Sig1_Flag
+                       bcf                    DCC_Sig2_Flag
+                       bcf                    DCC_Sig1_Flag
+; only change once per 0.01 sec
+                       btfss                  DCC_Sig2_Flag
+                       bcf                    DCC_Sig_Active
+                       btfsc                  DCC_Sig2_Flag
+                       bsf                    DCC_Sig_Active
+; set/clr DCC Sig OK LED
+                       clrw
+                       btfsc                  DCC_Sig_Active
+                       bsf                    WREG,0
+                       movlb                  2                      ;bank 2
+                       btfss                  WREG,0
+                       bcf                    SigOK_LED
+                       btfsc                  WREG,0
+                       bsf                    SigOK_LED
+                       movlb                  0                      ;bank 0
 ;
 SystemTick_end:
 ;
@@ -367,6 +399,42 @@ start	call	InitializeIO
 ;=========================================================================================
 MainLoop	CLRWDT
 ;
+;Look for DCC signal
+                       movlb                  0                      ;bank 0
+                       btfss                  RB3_In                 ;High?
+                       bra                    DCCSigTest_Low         ; No
+; it's high
+                       btfss                  DCC_Sig_Lvl            ;Was low last?
+                       bra                    DCCSigTest_End         ; No
+                       bsf                    DCC_Sig_Lvl            ;Remember it as high
+;
+DCCSigChanged          btfsc                  DCC_Sig1_Flag
+                       bsf                    DCC_Sig2_Flag
+                       bsf                    DCC_Sig1_Flag
+                       bra                    DCCSigTest_End
+; it's low
+DCCSigTest_Low         btfsc                  DCC_Sig_Lvl            ;Was high last?
+                       bra                    DCCSigTest_End         ; No
+                       bcf                    DCC_Sig_Lvl            ;Remember it as low
+                       bra                    DCCSigChanged
+DCCSigTest_End:
+;
+; Test for input volts too low
+                       movlb                  1                      ;bank 1
+                       movlw                  MinInVolts
+                       subwf                  InputVolts,W
+                       movlb                  0                      ;bank 0
+                       SKPB                                          ;MinInVolts>InputVolts?
+                       bsf                    InVoltsOK              ; No
+                       SKPNB                                         ;MinInVolts<=InputVolts?
+                       bcf                    InVoltsOK              ; No
+;
+; Set / clear error condition
+                       bcf                    DCC_ErrorFlag
+                       btfss                  InVoltsOK              ;Input volts OK?
+                       bsf                    DCC_ErrorFlag          ; No
+                       btfss                  DCC_Sig_Active         ;DCC Signal is active?
+                       bsf                    DCC_ErrorFlag          ; No
 ;
 ; Fast blink the system LED if the output is disabled because of an error
 	MOVLB	0x00
