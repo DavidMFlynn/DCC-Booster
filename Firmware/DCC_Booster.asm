@@ -207,14 +207,15 @@ T1CON_Val	EQU	b'00100001'	;Fosc=32MHz, PreScale=4,Fosc/4,Timer ON
 ;
 #Define                OutCurrentOK           StatusFlags2,0          ;Set when output current is OK
 #Define                OverCurrentHold        StatusFlags2,1
+#Define                OverCurrentDelay       StatusFlags2,2
 ;
 ;================================================================================================
 ;  Bank1 Ram 0A0h-0EFh 80 Bytes
 	cblock	0x0A0
 ;
 	ANFlags
-	Cur_AN0:2		;IServo
-	Cur_AN1:2		;Battery Volts
+	Cur_AN0:2		;15 Volt Source
+	Cur_AN1:2		;Output Current
 	MaxCurrent:2                                  ;Set from SW1..SW3 values
 ;
 	endc
@@ -227,23 +228,14 @@ T1CON_Val	EQU	b'00100001'	;Fosc=32MHz, PreScale=4,Fosc/4,Timer ON
 #Define	NewDataAN1	ANFlags,1
 ;
 MinInVolts             EQU                    .640                   ;3.1V * 4.19v/v = 13v
+kMinCurrent            EQU                    .48
 ;
 ;================================================================================================
 ;  Bank2 Ram 120h-16Fh 80 Bytes
-;
-;
 ;================================================================================================
 ;  Bank3 Ram 1A0h-1EFh 80 Bytes
 ;=========================================================================================
 ;  Bank5 Ram 2A0h-2EFh 80 Bytes
-;
-	cblock	0x2A0
-	SigOutTime
-	SigOutTimeH
-	CalcdDwell
-	CalcdDwellH
-	endc
-;
 ;=======================================================================================================
 ;  Common Ram 70-7F same for all banks
 ;      except for ISR_W_Temp these are used for paramiter passing and temp vars
@@ -394,6 +386,28 @@ start	call	InitializeIO
 ;
 	CALL	ReadAN0_ColdStart
 ;
+; Read Switches
+                       movlb                  0                      ;bank0
+                       btfss                  SW1_In                 ;Current Select 0 (Active Low Input)
+                       bsf                    SW1_Flag
+                       btfss                  SW2_In                 ;Current Select 1 (Active Low Input)
+                       bsf                    SW2_Flag
+                       btfss                  SW3_In                 ;Current Select 2 (Active Low Input)
+                       bsf                    SW3_Flag
+; set current limit value
+                       movf                   SysFlags,W
+                       andlw                  0x07
+                       movwf                  Param79
+                       movlb                  1                      ;bank 1
+SetCurrent_L1          movlw                  kMinCurrent
+                       addwf                  MaxCurrent,F
+                       movlw                  0x00
+                       addwfc                 MaxCurrent+1,F
+                       decfsz                 Param79,F
+                       bra                    SetCurrent_L1
+;
+                       movlb                  0                      ;bank 0
+;                      
 ;=========================================================================================
 ;*****************************************************************************************
 ;=========================================================================================
@@ -421,20 +435,67 @@ DCCSigTest_End:
 ;
 ; Test for input volts too low
                        movlb                  1                      ;bank 1
-                       movlw                  MinInVolts
+                       movlw                  low MinInVolts
                        subwf                  InputVolts,W
+                       movlw                  high MinInVolts
+                       subwfb                 InputVolts+1,W
                        movlb                  0                      ;bank 0
-                       SKPB                                          ;MinInVolts>InputVolts?
-                       bsf                    InVoltsOK              ; No
-                       SKPNB                                         ;MinInVolts<=InputVolts?
-                       bcf                    InVoltsOK              ; No
+                       SKPB                                          ;MinInVolts<=InputVolts?
+                       bsf                    InVoltsOK              ; Yes
+                       SKPNB                                         ;MinInVolts>InputVolts?
+                       bcf                    InVoltsOK              ; Yes
+;
+; Test for current too high
+                       btfss                  NewDataAN1
+                       bra                    OC_Test_End
+                       movlb                  1                      ;bank 1
+                       movf                   MaxCurrent,W
+                       subwf                  OuputCurrent,W
+                       movf                   MaxCurrent+1,W
+                       subwfb                 OuputCurrent+1,W
+                       movlb                  0                      ;bank 0
+                       SKPB                                          ;MaxCurrent<=OuputCurrent?
+                       bcf                    OutCurrentOK           ; Yes, Current too high
+                       SKPNB                                         ;MaxCurrent>OuputCurrent?
+                       bsf                    OutCurrentOK           ; Yes, Current below max
+;
+                       btfsc                  OutCurrentOK
+                       bra                    OC_Test_OK
+                       btfss                  OverCurrentDelay
+                       bra                    OC_Test_FirstOC
+                       movf                   Timer2Lo,W
+                       SKPZ                                          ;Timed out?
+                       bra                    OC_Test_End            ; No
+                       bsf                    OverCurrentHold        ; Yes
+                       bcf                    OverCurrentDelay
+                       movlw                  .100
+                       movwf                  Timer2Lo
+;
+OC_Test_FirstOC        bsf                    OverCurrentDelay
+                       movlw                  .5
+                       movwf                  Timer2Lo
+                       bra                    OC_Test_End
+OC_Test_OK             bcf                    OverCurrentDelay
+OC_Test_End:
+;
+; Clear over current hold
+                       btfss                  OverCurrentHold
+                       bra                    NoOC_Hold
+                       call                   TestT2_Zero
+                       SKPNZ
+                       bcf                    OverCurrentHold
+NoOC_Hold:                       
 ;
 ; Set / clear error condition
                        bcf                    DCC_ErrorFlag
                        btfss                  InVoltsOK              ;Input volts OK?
                        bsf                    DCC_ErrorFlag          ; No
+;
                        btfss                  DCC_Sig_Active         ;DCC Signal is active?
                        bsf                    DCC_ErrorFlag          ; No
+;
+                       btfsc                  OverCurrentHold        ;We were over current?
+                       bsf                    DCC_ErrorFlag          ; Yes
 ;
 ; Fast blink the system LED if the output is disabled because of an error
 	MOVLB	0x00
@@ -473,22 +534,21 @@ ReadAN	MOVLB	1	;bank 1
 	movf	ADCON0,W
 	movlb	0x00	;bank 0
 	andlw	ANNumMask
-	SKPNZ
-	bra	ReadAN_AN0
+	SKPNZ                                         ;AN0 selected?
+	bra	ReadAN_AN0             ; Yes
 ;
 	movwf	Param78	;AN select bits
-;IServo
-ReadAN_TryAN0	movlw	AN0_Val
+;Try AN1
+	movlw	AN1_Val
 	subwf	Param78,W
-	SKPNZ
-	bra	ReadAN_AN0
+	SKPNZ                                         ;AN1 selected?
+	bra	ReadAN_AN1             ; Yes
 ;
+;fall thru to handle unknown
 	movlw	AN0_Val	;next to read
 	movwf	Param78
 	movlw	LOW Cur_AN0
 	movwf	FSR0L
-	BankSel	Cur_AN0	;where the analog stuff is
-	bsf	NewDataAN0
 	bra	ReadAN_1
 ;
 ReadAN_AN0	movlw	low Cur_AN0
@@ -499,21 +559,13 @@ ReadAN_AN0	movlw	low Cur_AN0
 	movwf	Param78
 	bra	ReadAN_1
 ;
-ReadAN_AN0_1	movlw	AN2_Val	;next to read
-	movwf	Param78
-	bra	ReadAN_1
-;
-ReadAN_AN0_2	movlw	AN3_Val	;next to read
-	movwf	Param78
-	bra	ReadAN_1
-;
-ReadAN_AN0_3	movlw	AN0_Val	;next to read
-	movwf	Param78
-	bra	ReadAN_1
-;
 ReadAN_AN1	movlw	low Cur_AN1
 	movwf	FSR0L
-	bra	ReadAN_AN0_1
+	BankSel	Cur_AN0	;where the analog stuff is
+	bsf	NewDataAN1
+	movlw	AN0_Val	;next to read,
+	movwf	Param78                ; last one points back to first one
+	bra	ReadAN_1
 ;
 ;
 ReadAN_1	movlb	0x01	;bank 1
