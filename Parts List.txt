@@ -39,6 +39,7 @@ R3	6.8K 0805
 Notes:
 Changes for Rev A:
                        L1 Bigger Holes
+                       R32,R33 are connected wrong. R32 47K, R33 10K and connect to U10.2
                        U8 to SOIC-18 package
                        Remove J5
                        Use stacked LEDs

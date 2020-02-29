@@ -1,8 +1,8 @@
 ;====================================================================================================
 ;
 ;    Filename:      DCC_Booster.asm
-;    Date:          1/12/2020
-;    File Version:  1.0d1
+;    Date:          2/29/2020
+;    File Version:  1.0d2
 ;
 ;    Author:        David M. Flynn
 ;    Company:       Oxford V.U.E., Inc.
@@ -17,11 +17,13 @@
 ;	
 ;
 ;    History:
+; 1.0d2   2/29/2020	Ready to do a little testing.
 ; 1.0d1   1/12/2020	First code.
 ;
 ;====================================================================================================
 ; ToDo:
-;
+;  Reverser mode.
+;  Test mode.
 ;
 ;====================================================================================================
 ;====================================================================================================
@@ -128,7 +130,7 @@ ANSELB_Val	EQU	b'00000000'	;RB5/AN7
 #Define	SW1_In	PORTB,0	;Current Select 0 (Active Low Input)
 #Define	SW2_In	PORTB,1	;Current Select 1 (Active Low Input)
 #Define	SW3_In	PORTB,2	;Current Select 2 (Active Low Input)
-#Define	RB3_In	PORTB,3	;CCP1 Input, DCC Signal (Active High Input)
+#Define	DCC_Sig_In	PORTB,3	;CCP1 Input, DCC Signal (Active High Input)
 #Define	SW4_In	PORTB,4	;Normal/Reverse* (Active Low Input)
 #Define	Drv_StatusLED	LATB,5	;Driver Status LED (Active High Output)
 #Define	RB6_In	PORTB,6	;ICSPCLK
@@ -208,6 +210,7 @@ T1CON_Val	EQU	b'00100001'	;Fosc=32MHz, PreScale=4,Fosc/4,Timer ON
 #Define                OutCurrentOK           StatusFlags2,0          ;Set when output current is OK
 #Define                OverCurrentHold        StatusFlags2,1
 #Define                OverCurrentDelay       StatusFlags2,2
+#Define                RevMode                StatusFlags2,3
 ;
 ;================================================================================================
 ;  Bank1 Ram 0A0h-0EFh 80 Bytes
@@ -228,7 +231,7 @@ T1CON_Val	EQU	b'00100001'	;Fosc=32MHz, PreScale=4,Fosc/4,Timer ON
 #Define	NewDataAN1	ANFlags,1
 ;
 MinInVolts             EQU                    .640                   ;3.1V * 4.19v/v = 13v
-kMinCurrent            EQU                    .48
+kMinCurrent            EQU                    .32                    ;test value
 ;
 ;================================================================================================
 ;  Bank2 Ram 120h-16Fh 80 Bytes
@@ -398,6 +401,7 @@ start	call	InitializeIO
                        movf                   SysFlags,W
                        andlw                  0x07
                        movwf                  Param79
+                       incf                   Param79,F              ; make it 1..8
                        movlb                  1                      ;bank 1
 SetCurrent_L1          movlw                  kMinCurrent
                        addwf                  MaxCurrent,F
@@ -415,19 +419,19 @@ MainLoop	CLRWDT
 ;
 ;Look for DCC signal
                        movlb                  0                      ;bank 0
-                       btfss                  RB3_In                 ;High?
+                       btfss                  DCC_Sig_In             ;High?
                        bra                    DCCSigTest_Low         ; No
 ; it's high
-                       btfss                  DCC_Sig_Lvl            ;Was low last?
+                       btfsc                  DCC_Sig_Lvl            ;Was low last?
                        bra                    DCCSigTest_End         ; No
                        bsf                    DCC_Sig_Lvl            ;Remember it as high
 ;
-DCCSigChanged          btfsc                  DCC_Sig1_Flag
-                       bsf                    DCC_Sig2_Flag
+DCCSigChanged          btfsc                  DCC_Sig1_Flag          ;Armed?
+                       bsf                    DCC_Sig2_Flag          ; Yes
                        bsf                    DCC_Sig1_Flag
                        bra                    DCCSigTest_End
 ; it's low
-DCCSigTest_Low         btfsc                  DCC_Sig_Lvl            ;Was high last?
+DCCSigTest_Low         btfss                  DCC_Sig_Lvl            ;Was high last?
                        bra                    DCCSigTest_End         ; No
                        bcf                    DCC_Sig_Lvl            ;Remember it as low
                        bra                    DCCSigChanged
@@ -446,9 +450,10 @@ DCCSigTest_End:
                        bcf                    InVoltsOK              ; Yes
 ;
 ; Test for current too high
+                       movlb                  1                      ;bank 1
                        btfss                  NewDataAN1
                        bra                    OC_Test_End
-                       movlb                  1                      ;bank 1
+;
                        movf                   MaxCurrent,W
                        subwf                  OuputCurrent,W
                        movf                   MaxCurrent+1,W
@@ -466,17 +471,21 @@ DCCSigTest_End:
                        movf                   Timer2Lo,W
                        SKPZ                                          ;Timed out?
                        bra                    OC_Test_End            ; No
+;
                        bsf                    OverCurrentHold        ; Yes
                        bcf                    OverCurrentDelay
                        movlw                  .100
                        movwf                  Timer2Lo
+                       bra                    OC_Test_End
 ;
-OC_Test_FirstOC        bsf                    OverCurrentDelay
+OC_Test_FirstOC        btfsc                  OverCurrentHold
+                       bra                    OC_Test_OK
+                       bsf                    OverCurrentDelay
                        movlw                  .5
                        movwf                  Timer2Lo
                        bra                    OC_Test_End
 OC_Test_OK             bcf                    OverCurrentDelay
-OC_Test_End:
+OC_Test_End            movlb                  0                      ;bank 0
 ;
 ; Clear over current hold
                        btfss                  OverCurrentHold
@@ -496,6 +505,18 @@ NoOC_Hold:
 ;
                        btfsc                  OverCurrentHold        ;We were over current?
                        bsf                    DCC_ErrorFlag          ; Yes
+;
+; If there is an error disable the output.
+                       btfss                  DCC_ErrorFlag
+                       bra                    ML_EnableDrv
+                       movlb                  2                      ;bank 2
+                       bcf                    Drv_Enable             ;Drive off
+                       bcf                    Drv_StatusLED          ;LED off
+                       bra                    ML_EnableDrv_End
+ML_EnableDrv           movlb                  2                      ;bank 2
+                       bsf                    Drv_Enable             ;Drive Active
+                       bsf                    Drv_StatusLED          ;LED ON
+ML_EnableDrv_End       movlb                  0                      ;bank 0
 ;
 ; Fast blink the system LED if the output is disabled because of an error
 	MOVLB	0x00
