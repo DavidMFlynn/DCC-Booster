@@ -1,0 +1,5 @@
+(sym_lib_table
+  (lib (name "MC34167")(type "Legacy")(uri "${KIPRJMOD}/MC34167.lib")(options "")(descr ""))
+  (lib (name "SBR545D1")(type "Legacy")(uri "${KIPRJMOD}/SBR545D1.lib")(options "")(descr ""))
+  (lib (name "DCC_Booster-rescue")(type "Legacy")(uri "${KIPRJMOD}/DCC_Booster-rescue.lib")(options "")(descr ""))
+)

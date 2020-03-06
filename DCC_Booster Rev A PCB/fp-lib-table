@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name "SparkFun-Connectors")(type "KiCad")(uri "${KIPRJMOD}/SparkFun-Connectors.pretty")(options "")(descr ""))
+)
