@@ -4,10 +4,10 @@ U1	Switching Reg. TO220-5	MC34167TVGOS-ND	MC34167TVG
 U2	Switching Reg. 5v	102-5018-ND	P78E05-1000
 U3                     74HC08 SOIC-14
 U4,U5                  IR2101
-U6, U11                74AHC1G04
+U6, U11                74AHC1G04GV
 U7                     6N137
 U8                     PIC16F1847-IP DIP-18
-U9                     74AHC1G86
+U9                     74AHC1G86GV
 U10                    LM358AM SOIC-8
 
 L1	180uH 5A AIRD-03-181	535-11334-ND	AIRD-03-181K
