@@ -1,0 +1,47 @@
+Ref. Des. 	Desc.	DK	Mfg.
+------------------------------------------------------------------------
+U1	Switching Reg. TO220-5	MC34167TVGOS-ND	MC34167TVG
+U2	Switching Reg. 5v	102-5018-ND	P78E05-1000
+U3                     74HC08 SOIC-14
+U4,U5                  IR2101
+U6, U11                74AHC1G04GV
+U7                     6N137
+U8                     PIC16F1847-IP DIP-18
+U9                     74AHC1G86GV
+U10                    LM358AM SOIC-8
+
+L1	180uH 5A AIRD-03-181	535-11334-ND	AIRD-03-181K
+
+Q1,Q2,Q3,Q4	MOSFET N-CH	NTD5867NLT4GOSCT-ND	NTD5867NLT4G
+D1,D2,D3,D4,D6,
+D7,D10,D11,D12,D13	Diode Schottky	SBR545D1-13DICT-ND	SBR545D1-13
+D8,D9
+D14
+D15,D16,D17,D18,D19,
+D20	LED Green x3 (2)	754-1289-ND	WP934SA/3GD
+
+C1,C5,	0.1uf 50v Chip 0805
+C2	10uf 50v Chip          587-5961-1-ND          UMK325BJ106KMHP        SMD 1210
+C3	22uf 10v Chip          1276-3373-1-ND         CL32A226MAJNNNE        SMD 1210
+C4	330uf 50v Electrolytic	
+C6	4700uf 25v Electrolytic
+                       22uf 50v Electrolytic  PCE3921CT-ND	EEE-1HA221P            SMT 10mm
+
+SW1	Switch DIP 5	GH7138-ND	76PSB05T
+J1	Header 4 pin	ED2830-ND	OSTOQ045451
+J1.1	Plug 4 pin	ED2910-ND	OSTTJ045153
+Jxxx	Connector, Barrel	CP-063AH-ND	PJ-063AH
+J2,J3	RJ-9 Jack	AE10381-ND	A-2004-3-4-LP-N-R
+
+R1	68K 0805
+R2	3.3K 0805
+R3	6.8K 0805
+
+Notes:
+Changes for Rev A:
+                       L1 Bigger Holes
+                       R32,R33 are connected wrong. R32 47K, R33 10K and connect to U10.2
+                       U8 to SOIC-18 package
+                       Remove J5
+                       Use stacked LEDs
+                       Make PCB smaller

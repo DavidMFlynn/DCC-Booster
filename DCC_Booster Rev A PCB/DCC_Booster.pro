@@ -1,4 +1,4 @@
-update=Friday, March 06, 2020 at 06:26:53 PM
+update=Saturday, March 07, 2020 at 05:10:03 PM
 version=1
 last_client=kicad
 [general]
@@ -12,6 +12,22 @@ NetIExt=net
 version=1
 LibDir=
 [eeschema/libraries]
+[schematic_editor]
+version=1
+PageLayoutDescrFile=
+PlotDirectoryName=
+SubpartIdSeparator=0
+SubpartFirstId=65
+NetFmtName=
+SpiceAjustPassiveValues=0
+LabSize=12700
+ERC_WriteFile=0
+ERC_TestSimilarLabels=1
+ERC_CheckUniqueGlobalLabels=1
+ERC_CheckBusDriverConflicts=1
+ERC_CheckBusEntryConflicts=1
+ERC_CheckBusToBusConflicts=1
+ERC_CheckBusToNetConflicts=1
 [pcbnew]
 version=1
 PageLayoutDescrFile=
@@ -26,7 +42,7 @@ BoardThickness=1.6
 AllowMicroVias=0
 AllowBlindVias=0
 RequireCourtyardDefinitions=0
-ProhibitOverlappingCourtyards=1
+ProhibitOverlappingCourtyards=0
 MinTrackWidth=0.2
 MinViaDiameter=0.4
 MinViaDrill=0.3
@@ -71,8 +87,10 @@ OthersTextSizeH=1
 OthersTextSizeThickness=0.15
 OthersTextItalic=0
 OthersTextUpright=0
+DimensionUnits=0
+DimensionPrecision=1
 SolderMaskClearance=0
-SolderMaskMinWidth=0.1016
+SolderMaskMinWidth=0
 SolderPasteClearance=0
 SolderPasteRatio=-0
 [pcbnew/Layer.F.Cu]
@@ -253,19 +271,3 @@ uViaDrill=0.1
 dPairWidth=0.2
 dPairGap=0.25
 dPairViaGap=0.25
-[schematic_editor]
-version=1
-PageLayoutDescrFile=
-PlotDirectoryName=
-SubpartIdSeparator=0
-SubpartFirstId=65
-NetFmtName=
-SpiceAjustPassiveValues=0
-LabSize=12700
-ERC_WriteFile=0
-ERC_TestSimilarLabels=1
-ERC_CheckUniqueGlobalLabels=1
-ERC_CheckBusDriverConflicts=1
-ERC_CheckBusEntryConflicts=1
-ERC_CheckBusToBusConflicts=1
-ERC_CheckBusToNetConflicts=1

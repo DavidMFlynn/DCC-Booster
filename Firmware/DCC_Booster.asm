@@ -181,7 +181,7 @@ T1CON_Val	EQU	b'00100001'	;Fosc=32MHz, PreScale=4,Fosc/4,Timer ON
 	Timer1Lo		;1st 16 bit timer
 	Timer1Hi		; 50 mS RX timeiout
 	Timer2Lo		;2nd 16 bit timer
-	Timer2Hi		; OverCurrentHold
+	Timer2Hi		; OverCurrentHold/Error Hold
 	Timer3Lo		;3rd 16 bit timer
 	Timer3Hi		; GP wait timer
 	Timer4Lo		;4th 16 bit timer
@@ -211,6 +211,8 @@ T1CON_Val	EQU	b'00100001'	;Fosc=32MHz, PreScale=4,Fosc/4,Timer ON
 #Define                OverCurrentHold        StatusFlags2,1
 #Define                OverCurrentDelay       StatusFlags2,2
 #Define                RevMode                StatusFlags2,3
+#Define                InVoltsLowHold         StatusFlags2,4
+#Define                DCC_Sig_Hold           StatusFlags2,5
 ;
 ;================================================================================================
 ;  Bank1 Ram 0A0h-0EFh 80 Bytes
@@ -351,7 +353,9 @@ SystemBlink_end:
 ; set/clr DCC Sig OK LED
                        clrw
                        btfsc                  DCC_Sig_Active
-                       bsf                    WREG,0
+                       bsf                    WREG,0                 ;LED ON
+                       btfsc                  DCC_Sig_Hold           ;But wait, still holding?
+                       bcf                    WREG,0                 ; Yes, LED OFF
                        movlb                  2                      ;bank 2
                        btfss                  WREG,0
                        bcf                    SigOK_LED
@@ -411,12 +415,17 @@ SetCurrent_L1          movlw                  kMinCurrent
                        bra                    SetCurrent_L1
 ;
                        movlb                  0                      ;bank 0
+; stay in signal hold for 1 second after power up
+                       bsf                    DCC_Sig_Hold
+                       movlw                  .100                   ;Wait 1 second
+                       movwf                  Timer2Lo
 ;                      
 ;=========================================================================================
 ;*****************************************************************************************
 ;=========================================================================================
 MainLoop	CLRWDT
 ;
+;---------------------
 ;Look for DCC signal
                        movlb                  0                      ;bank 0
                        btfss                  DCC_Sig_In             ;High?
@@ -436,19 +445,49 @@ DCCSigTest_Low         btfss                  DCC_Sig_Lvl            ;Was high l
                        bcf                    DCC_Sig_Lvl            ;Remember it as low
                        bra                    DCCSigChanged
 DCCSigTest_End:
+;--------------------
+; DCC Signal Hold control
+                       btfss                  DCC_Sig_Hold           ;On hold for no signal?
+                       bra                    DoDCCSigHoldTest       ; No, see if we should be
+                       call                   TestT2_Zero            ; Yes
+                       SKPNZ                                         ;Time up?
+                       bcf                    DCC_Sig_Hold           ; Yes, clear hold and do test
+;
+DoDCCSigHoldTest       btfsc                  DCC_Sig_Active
+                       bra                    DDC_SigHoldCtrl_End
+                       bsf                    DCC_Sig_Hold
+                       movlw                  .100                   ;Wait 1 second
+                       movwf                  Timer2Lo
+DDC_SigHoldCtrl_End:
+;--------------------
 ;
 ; Test for input volts too low
-                       movlb                  1                      ;bank 1
-                       movlw                  low MinInVolts
+                       btfss                  InVoltsLowHold         ;On hold for low volts?
+                       bra                    DoInVoltsTest          ; No, do test
+                       call                   TestT2_Zero            ; Yes
+                       SKPNZ                                         ;Time up?
+                       bcf                    InVoltsLowHold         ; Yes, clear hold and do test
+;
+DoInVoltsTest          movlb                  1                      ;bank 1
+                       movlw                  low MinInVolts         ;subtrack minimum from actual
                        subwf                  InputVolts,W
                        movlw                  high MinInVolts
                        subwfb                 InputVolts+1,W
+;
                        movlb                  0                      ;bank 0
                        SKPB                                          ;MinInVolts<=InputVolts?
                        bsf                    InVoltsOK              ; Yes
                        SKPNB                                         ;MinInVolts>InputVolts?
                        bcf                    InVoltsOK              ; Yes
 ;
+                       btfsc                  InVoltsOK
+                       bra                    InVoltsTest_End
+                       bsf                    InVoltsLowHold
+                       movlw                  .100                   ;Wait 1 second
+                       movwf                  Timer2Lo
+;
+InVoltsTest_End:
+;---------------------
 ; Test for current too high
                        movlb                  1                      ;bank 1
                        btfss                  NewDataAN1
@@ -494,14 +533,19 @@ OC_Test_End            movlb                  0                      ;bank 0
                        SKPNZ
                        bcf                    OverCurrentHold
 NoOC_Hold:                       
-;
+;---------------------
 ; Set / clear error condition
                        bcf                    DCC_ErrorFlag
+;
                        btfss                  InVoltsOK              ;Input volts OK?
                        bsf                    DCC_ErrorFlag          ; No
+                       btfsc                  InVoltsLowHold         ;Still on hold?
+                       bsf                    DCC_ErrorFlag          ; Yes
 ;
                        btfss                  DCC_Sig_Active         ;DCC Signal is active?
                        bsf                    DCC_ErrorFlag          ; No
+                       btfsc                  DCC_Sig_Hold           ;Still on hold for no signal?
+                       bsf                    DCC_ErrorFlag          ; Yes
 ;
                        btfsc                  OverCurrentHold        ;We were over current?
                        bsf                    DCC_ErrorFlag          ; Yes
