@@ -5,7 +5,7 @@ $Descr A 11000 8500
 encoding utf-8
 Sheet 1 1
 Title "DCC Booster"
-Date "2020-03-11"
+Date "2020-05-08"
 Rev "B"
 Comp "DMFE"
 Comment1 "Model Railroad Digital Command Control Booster"
@@ -102,16 +102,22 @@ Connection ~ 7050 5750
 Connection ~ 7650 5100
 Connection ~ 7650 5250
 Connection ~ 7650 6150
-Connection ~ 8050 950 
+Connection ~ 7700 800 
+Connection ~ 7700 950 
+Connection ~ 7750 2550
+Connection ~ 7750 2700
 Connection ~ 8050 2000
-Connection ~ 8100 2700
 Connection ~ 8100 3750
 Connection ~ 8250 5950
-Connection ~ 8350 1200
 Connection ~ 8400 5100
 Connection ~ 8400 5550
-Connection ~ 8450 2950
+Connection ~ 8650 1200
+Connection ~ 8650 2950
+Connection ~ 8700 1200
+Connection ~ 8700 1600
 Connection ~ 8700 1700
+Connection ~ 8700 2950
+Connection ~ 8700 3350
 Connection ~ 8700 3450
 Connection ~ 8850 5750
 Connection ~ 8850 6250
@@ -271,9 +277,9 @@ Wire Wire Line
 Wire Wire Line
 	6000 950  6050 950 
 Wire Wire Line
-	6000 1350 6000 1300
-Wire Wire Line
 	6000 1350 6000 1400
+Wire Wire Line
+	6000 1350 6000 1300
 Wire Wire Line
 	6000 3300 6000 3250
 Wire Wire Line
@@ -299,13 +305,11 @@ Wire Wire Line
 Wire Wire Line
 	7700 1000 7700 950 
 Wire Wire Line
+	7750 2500 7750 2550
+Wire Wire Line
 	7750 2700 7750 2750
 Wire Wire Line
-	8050 900  8050 950 
-Wire Wire Line
 	8050 1000 8050 950 
-Wire Wire Line
-	8100 2650 8100 2700
 Wire Wire Line
 	8100 2750 8100 2700
 Wire Wire Line
@@ -313,13 +317,25 @@ Wire Wire Line
 Wire Wire Line
 	8250 6200 8250 6250
 Wire Wire Line
-	8400 2700 8450 2700
-Wire Wire Line
-	8400 2950 8450 2950
-Wire Wire Line
 	8400 5550 8400 5500
 Wire Wire Line
+	8600 800  8650 800 
+Wire Wire Line
+	8600 2550 8650 2550
+Wire Wire Line
+	8650 1200 8700 1200
+Wire Wire Line
+	8650 1600 8700 1600
+Wire Wire Line
+	8650 2950 8700 2950
+Wire Wire Line
+	8650 3350 8700 3350
+Wire Wire Line
 	8650 6250 8650 6200
+Wire Wire Line
+	8700 1200 8750 1200
+Wire Wire Line
+	8700 2950 8750 2950
 Wire Wire Line
 	8850 4150 8850 4200
 Wire Wire Line
@@ -457,6 +473,8 @@ Wire Wire Line
 Wire Wire Line
 	7650 5350 7650 5250
 Wire Wire Line
+	7700 700  7700 800 
+Wire Wire Line
 	7700 3250 7800 3250
 Wire Wire Line
 	7750 1600 7650 1600
@@ -558,6 +576,10 @@ Wire Wire Line
 	7150 2250 7000 2250
 Wire Wire Line
 	7650 5100 7650 5250
+Wire Wire Line
+	7700 800  7700 950 
+Wire Wire Line
+	7750 2550 7750 2700
 Wire Wire Line
 	8350 1300 8500 1300
 Wire Wire Line
@@ -691,6 +713,8 @@ Wire Wire Line
 Wire Wire Line
 	7700 3350 7700 3600
 Wire Wire Line
+	7750 2550 8000 2550
+Wire Wire Line
 	8150 4800 8400 4800
 Wire Wire Line
 	8150 5100 8400 5100
@@ -699,11 +723,7 @@ Wire Wire Line
 Wire Wire Line
 	8250 6250 8000 6250
 Wire Wire Line
-	8350 950  8350 1200
-Wire Wire Line
-	8450 2700 8450 2950
-Wire Wire Line
-	8450 2950 8700 2950
+	8400 2950 8650 2950
 Wire Wire Line
 	9000 5550 9000 5300
 Wire Wire Line
@@ -758,6 +778,10 @@ Wire Wire Line
 	6000 2850 6300 2850
 Wire Wire Line
 	6350 1950 6350 2250
+Wire Wire Line
+	7700 800  8000 800 
+Wire Wire Line
+	8350 1200 8650 1200
 Wire Wire Line
 	8400 3450 8700 3450
 Wire Wire Line
@@ -817,8 +841,6 @@ Wire Wire Line
 Wire Wire Line
 	8100 2700 7750 2700
 Wire Wire Line
-	8350 1200 8700 1200
-Wire Wire Line
 	8350 1700 8700 1700
 Wire Wire Line
 	8700 3450 9050 3450
@@ -838,6 +860,10 @@ Wire Wire Line
 	8550 1800 8550 2200
 Wire Wire Line
 	8550 3550 8550 3950
+Wire Wire Line
+	8650 800  8650 1200
+Wire Wire Line
+	8650 2550 8650 2950
 Wire Wire Line
 	1400 6200 1400 6650
 Wire Wire Line
@@ -1038,14 +1064,14 @@ Text GLabel 7600 5100 0    50   Input ~ 0
 C10N
 Text GLabel 7850 4800 0    50   Input ~ 0
 C10P
-Text GLabel 8700 1200 2    50   Input ~ 0
-C10P
-Text GLabel 8700 1600 0    50   Input ~ 0
+Text GLabel 8650 1600 0    50   Input ~ 0
 C10N
-Text GLabel 8700 2950 2    50   Input ~ 0
-C11P
-Text GLabel 8700 3350 0    50   Input ~ 0
+Text GLabel 8650 3350 0    50   Input ~ 0
 C11N
+Text GLabel 8750 1200 2    50   Input ~ 0
+C10P
+Text GLabel 8750 2950 2    50   Input ~ 0
+C11P
 Text GLabel 9500 5100 0    50   Input ~ 0
 C11N
 Text GLabel 9750 4800 0    50   Input ~ 0
@@ -1343,23 +1369,23 @@ $EndComp
 $Comp
 L power:Vdrive #PWR014
 U 1 1 5E6484D3
-P 8050 900
-F 0 "#PWR014" H 7850 750 50  0001 C CNN
-F 1 "Vdrive" H 8065 1073 50  0000 C CNN
-F 2 "" H 8050 900 50  0001 C CNN
-F 3 "" H 8050 900 50  0001 C CNN
-	1    8050 900 
+P 7700 700
+F 0 "#PWR014" H 7500 550 50  0001 C CNN
+F 1 "Vdrive" H 7715 873 50  0000 C CNN
+F 2 "" H 7700 700 50  0001 C CNN
+F 3 "" H 7700 700 50  0001 C CNN
+	1    7700 700 
 	1    0    0    -1  
 $EndComp
 $Comp
 L power:Vdrive #PWR055
 U 1 1 5E647FED
-P 8100 2650
-F 0 "#PWR055" H 7900 2500 50  0001 C CNN
-F 1 "Vdrive" H 8115 2823 50  0000 C CNN
-F 2 "" H 8100 2650 50  0001 C CNN
-F 3 "" H 8100 2650 50  0001 C CNN
-	1    8100 2650
+P 7750 2500
+F 0 "#PWR055" H 7550 2350 50  0001 C CNN
+F 1 "Vdrive" H 7765 2673 50  0000 C CNN
+F 2 "" H 7750 2500 50  0001 C CNN
+F 3 "" H 7750 2500 50  0001 C CNN
+	1    7750 2500
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -2045,6 +2071,28 @@ F 3 "~" H 8400 5700 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
+L Device:R R?
+U 1 1 5EB60E7C
+P 8450 800
+F 0 "R?" V 8350 800 50  0000 R CNN
+F 1 "10R" V 8450 850 50  0000 R CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" V 8380 800 50  0001 C CNN
+F 3 "~" H 8450 800 50  0001 C CNN
+	1    8450 800 
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R?
+U 1 1 5EB618EF
+P 8450 2550
+F 0 "R?" V 8350 2550 50  0000 R CNN
+F 1 "10R" V 8450 2600 50  0000 R CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" V 8380 2550 50  0001 C CNN
+F 3 "~" H 8450 2550 50  0001 C CNN
+	1    8450 2550
+	0    1    1    0   
+$EndComp
+$Comp
 L Device:R R4
 U 1 1 5DC392D2
 P 8850 1000
@@ -2256,23 +2304,23 @@ $EndComp
 $Comp
 L Diode:B140-E3 D8
 U 1 1 5DC40A05
-P 8200 950
-F 0 "D8" H 8200 850 50  0000 C CNN
-F 1 "B140-E3" H 8200 825 50  0001 C CNN
-F 2 "Diode_SMD:D_SOD-123" H 8200 775 50  0001 C CNN
-F 3 "http://www.vishay.com/docs/88946/b120.pdf" H 8200 950 50  0001 C CNN
-	1    8200 950 
+P 8150 800
+F 0 "D8" H 8150 700 50  0000 C CNN
+F 1 "B140-E3" H 8150 675 50  0001 C CNN
+F 2 "Diode_SMD:D_SOD-123" H 8150 625 50  0001 C CNN
+F 3 "http://www.vishay.com/docs/88946/b120.pdf" H 8150 800 50  0001 C CNN
+	1    8150 800 
 	-1   0    0    1   
 $EndComp
 $Comp
 L Diode:B140-E3 D9
 U 1 1 5DC4BA8D
-P 8250 2700
-F 0 "D9" H 8250 2600 50  0000 C CNN
-F 1 "B140-E3" H 8250 2575 50  0001 C CNN
-F 2 "Diode_SMD:D_SOD-123" H 8250 2525 50  0001 C CNN
-F 3 "http://www.vishay.com/docs/88946/b120.pdf" H 8250 2700 50  0001 C CNN
-	1    8250 2700
+P 8150 2550
+F 0 "D9" H 8150 2450 50  0000 C CNN
+F 1 "B140-E3" H 8150 2425 50  0001 C CNN
+F 2 "Diode_SMD:D_SOD-123" H 8150 2375 50  0001 C CNN
+F 3 "http://www.vishay.com/docs/88946/b120.pdf" H 8150 2550 50  0001 C CNN
+	1    8150 2550
 	-1   0    0    1   
 $EndComp
 $Comp
