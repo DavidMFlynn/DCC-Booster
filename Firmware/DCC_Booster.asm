@@ -1,8 +1,8 @@
 ;====================================================================================================
 ;
 ;    Filename:      DCC_Booster.asm
-;    Date:          2/29/2020
-;    File Version:  1.0d2
+;    Created:       1/12/2020
+;    File Version:  1.0d3   5/27/2020
 ;
 ;    Author:        David M. Flynn
 ;    Company:       Oxford V.U.E., Inc.
@@ -17,6 +17,7 @@
 ;	
 ;
 ;    History:
+; 1.0d3   5/27/2020    Added Short Circuit Instant Off. kShortCircuitCurrent
 ; 1.0d2   2/29/2020	Ready to do a little testing.
 ; 1.0d1   1/12/2020	First code.
 ;
@@ -233,7 +234,9 @@ T1CON_Val	EQU	b'00100001'	;Fosc=32MHz, PreScale=4,Fosc/4,Timer ON
 #Define	NewDataAN1	ANFlags,1
 ;
 MinInVolts             EQU                    .640                   ;3.1V * 4.19v/v = 13v
-kMinCurrent            EQU                    .32                    ;test value
+;0.85Amp=0.63Volt, 0.0048828Volt/cnt, 152cnt/Amp
+kMinCurrent            EQU                    .32                    ;0.21Amp..1.68Amp test value 
+kShortCircuitCurrent   EQU                    .304                   ;2Amps = 304cnt, 3Amps = 456cnt
 ;
 ;================================================================================================
 ;  Bank2 Ram 120h-16Fh 80 Bytes
@@ -488,12 +491,31 @@ DoInVoltsTest          movlb                  1                      ;bank 1
 ;
 InVoltsTest_End:
 ;---------------------
-; Test for current too high
+; Test Short Circuit and for current too high
                        movlb                  1                      ;bank 1
                        btfss                  NewDataAN1
                        bra                    OC_Test_End
 ;
-                       movf                   MaxCurrent,W
+                       bcf                    NewDataAN1
+;
+; Short Circuit Test >kShortCircuitCurrent
+                       movlw                  LOW kShortCircuitCurrent
+                       subwf                  OuputCurrent,W
+                       movlw                  HIGH kShortCircuitCurrent
+                       subwfb                 OuputCurrent+1,W
+                       movlb                  0                      ;bank 0
+                       SKPB                                          ;kShortCircuitCurrent<=OuputCurrent?
+                       bcf                    OutCurrentOK           ; Yes, Current too high
+                       SKPNB                                         ;kShortCircuitCurrent>OuputCurrent?
+                       bsf                    OutCurrentOK           ; Yes, Current below max
+;
+                       btfsc                  OutCurrentOK
+                       bra                    OC_Test
+; We are shorted or close to it.
+                       bra                    OC_Test_OC             ;Stop NOW!
+;
+; High Current Test
+OC_Test                movf                   MaxCurrent,W
                        subwf                  OuputCurrent,W
                        movf                   MaxCurrent+1,W
                        subwfb                 OuputCurrent+1,W
@@ -511,7 +533,7 @@ InVoltsTest_End:
                        SKPZ                                          ;Timed out?
                        bra                    OC_Test_End            ; No
 ;
-                       bsf                    OverCurrentHold        ; Yes
+OC_Test_OC             bsf                    OverCurrentHold        ; Yes
                        bcf                    OverCurrentDelay
                        movlw                  .100
                        movwf                  Timer2Lo
