@@ -515,7 +515,8 @@ InVoltsTest_End:
                        bra                    OC_Test_OC             ;Stop NOW!
 ;
 ; High Current Test
-OC_Test                movf                   MaxCurrent,W
+OC_Test                movlb                  1                      ;bank 1
+                       movf                   MaxCurrent,W
                        subwf                  OuputCurrent,W
                        movf                   MaxCurrent+1,W
                        subwfb                 OuputCurrent+1,W

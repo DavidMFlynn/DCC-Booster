@@ -662,9 +662,9 @@ DCC_Booster.asm                                                       Page: 1
 00392 00A4 	;
 00393 00A4 	;=========================================================================================
 00394 00A4 	;
-00395 00A4 2173 	start	call	InitializeIO
+00395 00A4 2174 	start	call	InitializeIO
 00396 00A5 	;
-00397 00A5 2168 		CALL	ReadAN0_ColdStart
+00397 00A5 2169 		CALL	ReadAN0_ColdStart
 00398 00A6 	;
 00399 00A6 	; Read Switches
 00400 00A6 0020 	                       movlb                  0                      ;bank0
@@ -771,7 +771,7 @@ DCC_Booster.asm                                                       Page: 1
 00494 00E9 	; Test Short Circuit and for current too high
 00495 00E9 0021 	                       movlb                  1                      ;bank 1
 00496 00EA 1CA0 	                       btfss                  NewDataAN1
-00497 00EB 3229 	                       bra                    OC_Test_End
+00497 00EB 322A 	                       bra                    OC_Test_End
 00498 00EC 	;
 00499 00EC 10A0 	                       bcf                    NewDataAN1
 00500 00ED 	;
@@ -791,284 +791,285 @@ DCC_Booster.asm                                                       Page: 1
 00512 00F6 1830 	                       btfsc                  OutCurrentOK
 00513 00F7 3201 	                       bra                    OC_Test
 00514 00F8 	; We are shorted or close to it.
-00515 00F8 3210 	                       bra                    OC_Test_OC             ;Stop NOW!
+00515 00F8 3211 	                       bra                    OC_Test_OC             ;Stop NOW!
 00516 00F9 	;
 00517 00F9 	; High Current Test
-00518 00F9 0825 	OC_Test                movf                   MaxCurrent,W
-00519 00FA 0223 	                       subwf                  OuputCurrent,W
-00520 00FB 0826 	                       movf                   MaxCurrent+1,W
-00521 00FC 3B24 	                       subwfb                 OuputCurrent+1,W
-00522 00FD 0020 	                       movlb                  0                      ;bank 0
-00523 00FE 	                       SKPB                                          ;MaxCurrent<=OuputCurrent?
-00523 00FE 1803      M		BTFSC	STATUS,C		BTFSC	STATUS,C
-00524 00FF 1030 	                       bcf                    OutCurrentOK           ; Yes, Current too high
-00525 0100 	                       SKPNB                                         ;MaxCurrent>OuputCurrent?
-00525 0100 1C03      M		BTFSS	STATUS,C		BTFSS	STATUS,C
-00526 0101 1430 	                       bsf                    OutCurrentOK           ; Yes, Current below max
-00527 0102 	;
-00528 0102 1830 	                       btfsc                  OutCurrentOK
-00529 0103 3210 	                       bra                    OC_Test_OK
-00530 0104 1D30 	                       btfss                  OverCurrentDelay
-00531 0105 3208 	                       bra                    OC_Test_FirstOC
-00532 0106 0828 	                       movf                   Timer2Lo,W
-00533 0107 	                       SKPZ                                          ;Timed out?
-00533 0107 1D03      M		BTFSS	STATUS,Z		BTFSS	STATUS,Z
-00534 0108 320C 	                       bra                    OC_Test_End            ; No
+00518 00F9 0021 	OC_Test                movlb                  1                      ;bank 1
+00519 00FA 0825 	                       movf                   MaxCurrent,W
+00520 00FB 0223 	                       subwf                  OuputCurrent,W
+00521 00FC 0826 	                       movf                   MaxCurrent+1,W
+00522 00FD 3B24 	                       subwfb                 OuputCurrent+1,W
+00523 00FE 0020 	                       movlb                  0                      ;bank 0
+00524 00FF 	                       SKPB                                          ;MaxCurrent<=OuputCurrent?
+00524 00FF 1803      M		BTFSC	STATUS,C		BTFSC	STATUS,C
+00525 0100 1030 	                       bcf                    OutCurrentOK           ; Yes, Current too high
+00526 0101 	                       SKPNB                                         ;MaxCurrent>OuputCurrent?
+00526 0101 1C03      M		BTFSS	STATUS,C		BTFSS	STATUS,C
+00527 0102 1430 	                       bsf                    OutCurrentOK           ; Yes, Current below max
+00528 0103 	;
+00529 0103 1830 	                       btfsc                  OutCurrentOK
+00530 0104 3210 	                       bra                    OC_Test_OK
+00531 0105 1D30 	                       btfss                  OverCurrentDelay
+00532 0106 3208 	                       bra                    OC_Test_FirstOC
+00533 0107 0828 	                       movf                   Timer2Lo,W
+00534 0108 	                       SKPZ                                          ;Timed out?
+00534 0108 1D03      M		BTFSS	STATUS,Z		BTFSS	STATUS,Z
 DCC_Booster.asm                                                       Page: 9
 /Users/davidflynn/Projects/DCC Booster DMFE/DCC-Booster/Firmware/
 
-00535 0109 	;
-00536 0109 14B0 	OC_Test_OC             bsf                    OverCurrentHold        ; Yes
-00537 010A 1130 	                       bcf                    OverCurrentDelay
-00538 010B 3064 	                       movlw                  .100
-00539 010C 00A8 	                       movwf                  Timer2Lo
-00540 010D 3207 	                       bra                    OC_Test_End
-00541 010E 	;
-00542 010E 18B0 	OC_Test_FirstOC        btfsc                  OverCurrentHold
-00543 010F 3204 	                       bra                    OC_Test_OK
-00544 0110 1530 	                       bsf                    OverCurrentDelay
-00545 0111 3005 	                       movlw                  .5
-00546 0112 00A8 	                       movwf                  Timer2Lo
-00547 0113 3201 	                       bra                    OC_Test_End
-00548 0114 1130 	OC_Test_OK             bcf                    OverCurrentDelay
-00549 0115 0020 	OC_Test_End            movlb                  0                      ;bank 0
-00550 0116 	;
-00551 0116 	; Clear over current hold
-00552 0116 1CB0 	                       btfss                  OverCurrentHold
-00553 0117 3203 	                       bra                    NoOC_Hold
-00554 0118 206E 	                       call                   TestT2_Zero
-00555 0119 	                       SKPNZ
-00555 0119 1903      M		BTFSC	STATUS,Z		BTFSC	STATUS,Z
-00556 011A 10B0 	                       bcf                    OverCurrentHold
-00557 011B 	NoOC_Hold:                       
-00558 011B 	;---------------------
-00559 011B 	; Set / clear error condition
-00560 011B 102F 	                       bcf                    DCC_ErrorFlag
-00561 011C 	;
-00562 011C 1EAF 	                       btfss                  InVoltsOK              ;Input volts OK?
-00563 011D 142F 	                       bsf                    DCC_ErrorFlag          ; No
-00564 011E 1A30 	                       btfsc                  InVoltsLowHold         ;Still on hold?
-00565 011F 142F 	                       bsf                    DCC_ErrorFlag          ; Yes
-00566 0120 	;
-00567 0120 1E2F 	                       btfss                  DCC_Sig_Active         ;DCC Signal is active?
-00568 0121 142F 	                       bsf                    DCC_ErrorFlag          ; No
-00569 0122 1AB0 	                       btfsc                  DCC_Sig_Hold           ;Still on hold for no signal?
-00570 0123 142F 	                       bsf                    DCC_ErrorFlag          ; Yes
-00571 0124 	;
-00572 0124 18B0 	                       btfsc                  OverCurrentHold        ;We were over current?
-00573 0125 142F 	                       bsf                    DCC_ErrorFlag          ; Yes
-00574 0126 	;
-00575 0126 	; If there is an error disable the output.
-00576 0126 1C2F 	                       btfss                  DCC_ErrorFlag
-00577 0127 3204 	                       bra                    ML_EnableDrv
-00578 0128 0022 	                       movlb                  2                      ;bank 2
-00579 0129 130C 	                       bcf                    Drv_Enable             ;Drive off
-00580 012A 128D 	                       bcf                    Drv_StatusLED          ;LED off
-00581 012B 3203 	                       bra                    ML_EnableDrv_End
-00582 012C 0022 	ML_EnableDrv           movlb                  2                      ;bank 2
-00583 012D 170C 	                       bsf                    Drv_Enable             ;Drive Active
-00584 012E 168D 	                       bsf                    Drv_StatusLED          ;LED ON
-00585 012F 0020 	ML_EnableDrv_End       movlb                  0                      ;bank 0
-00586 0130 	;
-00587 0130 	; Fast blink the system LED if the output is disabled because of an error
-00588 0130 0020 		MOVLB	0x00
-00589 0131 3064 		MOVLW	LEDTIME
-00590 0132 182F 		btfsc	DCC_ErrorFlag
-00591 0133 300A 		movlw	LEDErrorTime
-00592 0134 00A0 		MOVWF	SysLED_Time
-00593 0135 	;
-00594 0135 2137 		CALL	ReadAN
-00595 0136 	;
-00596 0136 	;
-00597 0136 28BC 		goto	MainLoop
-00598 0137 	;=========================================================================================
-00599 0137 	;*****************************************************************************************
-00600 0137 	;=========================================================================================
-00601 0137 	;
-00602 0137 	;=========================================================================================
-00603 0137 	; Setup or Read AN0 or Read AN4
-00604 0137 007C 	ANNumMask	EQU	0x7C
-00605 0137 0000 	AN0_Val	EQU	0x00
-00606 0137 0004 	AN1_Val	EQU	0x04
-00607 0137 0008 	AN2_Val	EQU	0x08
-00608 0137 000C 	AN3_Val	EQU	0x0C
-00609 0137 	;AN4_Val	EQU	0x10
-00610 0137 	;AN7_Val	EQU	0x1C
-00611 0137 	;
-00612 0137 0021 	ReadAN	MOVLB	1	;bank 1
-00613 0138 1C1D 		BTFSS	ADCON0,ADON	;Is the Analog input ON?
-00614 0139 322E 		BRA	ReadAN0_ColdStart	; No, go start it
-00615 013A 	;
-00616 013A 189D 		BTFSC	ADCON0,GO_NOT_DONE	;Conversion done?
-00617 013B 3235 		BRA	ReadAN_Rtn	; No
-00618 013C 	;
-00619 013C 3000 		movlw	HIGH Cur_AN0
-00620 013D 0085 		movwf	FSR0H
-00621 013E 081D 		movf	ADCON0,W
-00622 013F 0020 		movlb	0x00	;bank 0
-00623 0140 397C 		andlw	ANNumMask
-00624 0141 		SKPNZ                                         ;AN0 selected?
-00624 0141 1903      M		BTFSC	STATUS,Z		BTFSC	STATUS,Z
-00625 0142 320A 		bra	ReadAN_AN0             ; Yes
-00626 0143 	;
-00627 0143 00F8 		movwf	Param78	;AN select bits
-00628 0144 	;Try AN1
-00629 0144 3004 		movlw	AN1_Val
-00630 0145 0278 		subwf	Param78,W
-00631 0146 		SKPNZ                                         ;AN1 selected?
+00535 0109 320C 	                       bra                    OC_Test_End            ; No
+00536 010A 	;
+00537 010A 14B0 	OC_Test_OC             bsf                    OverCurrentHold        ; Yes
+00538 010B 1130 	                       bcf                    OverCurrentDelay
+00539 010C 3064 	                       movlw                  .100
+00540 010D 00A8 	                       movwf                  Timer2Lo
+00541 010E 3207 	                       bra                    OC_Test_End
+00542 010F 	;
+00543 010F 18B0 	OC_Test_FirstOC        btfsc                  OverCurrentHold
+00544 0110 3204 	                       bra                    OC_Test_OK
+00545 0111 1530 	                       bsf                    OverCurrentDelay
+00546 0112 3005 	                       movlw                  .5
+00547 0113 00A8 	                       movwf                  Timer2Lo
+00548 0114 3201 	                       bra                    OC_Test_End
+00549 0115 1130 	OC_Test_OK             bcf                    OverCurrentDelay
+00550 0116 0020 	OC_Test_End            movlb                  0                      ;bank 0
+00551 0117 	;
+00552 0117 	; Clear over current hold
+00553 0117 1CB0 	                       btfss                  OverCurrentHold
+00554 0118 3203 	                       bra                    NoOC_Hold
+00555 0119 206E 	                       call                   TestT2_Zero
+00556 011A 	                       SKPNZ
+00556 011A 1903      M		BTFSC	STATUS,Z		BTFSC	STATUS,Z
+00557 011B 10B0 	                       bcf                    OverCurrentHold
+00558 011C 	NoOC_Hold:                       
+00559 011C 	;---------------------
+00560 011C 	; Set / clear error condition
+00561 011C 102F 	                       bcf                    DCC_ErrorFlag
+00562 011D 	;
+00563 011D 1EAF 	                       btfss                  InVoltsOK              ;Input volts OK?
+00564 011E 142F 	                       bsf                    DCC_ErrorFlag          ; No
+00565 011F 1A30 	                       btfsc                  InVoltsLowHold         ;Still on hold?
+00566 0120 142F 	                       bsf                    DCC_ErrorFlag          ; Yes
+00567 0121 	;
+00568 0121 1E2F 	                       btfss                  DCC_Sig_Active         ;DCC Signal is active?
+00569 0122 142F 	                       bsf                    DCC_ErrorFlag          ; No
+00570 0123 1AB0 	                       btfsc                  DCC_Sig_Hold           ;Still on hold for no signal?
+00571 0124 142F 	                       bsf                    DCC_ErrorFlag          ; Yes
+00572 0125 	;
+00573 0125 18B0 	                       btfsc                  OverCurrentHold        ;We were over current?
+00574 0126 142F 	                       bsf                    DCC_ErrorFlag          ; Yes
+00575 0127 	;
+00576 0127 	; If there is an error disable the output.
+00577 0127 1C2F 	                       btfss                  DCC_ErrorFlag
+00578 0128 3204 	                       bra                    ML_EnableDrv
+00579 0129 0022 	                       movlb                  2                      ;bank 2
+00580 012A 130C 	                       bcf                    Drv_Enable             ;Drive off
+00581 012B 128D 	                       bcf                    Drv_StatusLED          ;LED off
+00582 012C 3203 	                       bra                    ML_EnableDrv_End
+00583 012D 0022 	ML_EnableDrv           movlb                  2                      ;bank 2
+00584 012E 170C 	                       bsf                    Drv_Enable             ;Drive Active
+00585 012F 168D 	                       bsf                    Drv_StatusLED          ;LED ON
+00586 0130 0020 	ML_EnableDrv_End       movlb                  0                      ;bank 0
+00587 0131 	;
+00588 0131 	; Fast blink the system LED if the output is disabled because of an error
+00589 0131 0020 		MOVLB	0x00
+00590 0132 3064 		MOVLW	LEDTIME
+00591 0133 182F 		btfsc	DCC_ErrorFlag
+00592 0134 300A 		movlw	LEDErrorTime
+00593 0135 00A0 		MOVWF	SysLED_Time
+00594 0136 	;
+00595 0136 2138 		CALL	ReadAN
+00596 0137 	;
+00597 0137 	;
+00598 0137 28BC 		goto	MainLoop
+00599 0138 	;=========================================================================================
+00600 0138 	;*****************************************************************************************
+00601 0138 	;=========================================================================================
+00602 0138 	;
+00603 0138 	;=========================================================================================
+00604 0138 	; Setup or Read AN0 or Read AN4
+00605 0138 007C 	ANNumMask	EQU	0x7C
+00606 0138 0000 	AN0_Val	EQU	0x00
+00607 0138 0004 	AN1_Val	EQU	0x04
+00608 0138 0008 	AN2_Val	EQU	0x08
+00609 0138 000C 	AN3_Val	EQU	0x0C
+00610 0138 	;AN4_Val	EQU	0x10
+00611 0138 	;AN7_Val	EQU	0x1C
+00612 0138 	;
+00613 0138 0021 	ReadAN	MOVLB	1	;bank 1
+00614 0139 1C1D 		BTFSS	ADCON0,ADON	;Is the Analog input ON?
+00615 013A 322E 		BRA	ReadAN0_ColdStart	; No, go start it
+00616 013B 	;
+00617 013B 189D 		BTFSC	ADCON0,GO_NOT_DONE	;Conversion done?
+00618 013C 3235 		BRA	ReadAN_Rtn	; No
+00619 013D 	;
+00620 013D 3000 		movlw	HIGH Cur_AN0
+00621 013E 0085 		movwf	FSR0H
+00622 013F 081D 		movf	ADCON0,W
+00623 0140 0020 		movlb	0x00	;bank 0
+00624 0141 397C 		andlw	ANNumMask
+00625 0142 		SKPNZ                                         ;AN0 selected?
+00625 0142 1903      M		BTFSC	STATUS,Z		BTFSC	STATUS,Z
+00626 0143 320A 		bra	ReadAN_AN0             ; Yes
+00627 0144 	;
+00628 0144 00F8 		movwf	Param78	;AN select bits
+00629 0145 	;Try AN1
+00630 0145 3004 		movlw	AN1_Val
+00631 0146 0278 		subwf	Param78,W
 DCC_Booster.asm                                                       Page: 10
 /Users/davidflynn/Projects/DCC Booster DMFE/DCC-Booster/Firmware/
 
-00631 0146 1903      M		BTFSC	STATUS,Z		BTFSC	STATUS,Z
-00632 0147 320C 		bra	ReadAN_AN1             ; Yes
-00633 0148 	;
-00634 0148 	;fall thru to handle unknown
-00635 0148 3000 		movlw	AN0_Val	;next to read
-00636 0149 00F8 		movwf	Param78
-00637 014A 30A1 		movlw	LOW Cur_AN0
-00638 014B 0084 		movwf	FSR0L
-00639 014C 320E 		bra	ReadAN_1
-00640 014D 	;
-00641 014D 30A1 	ReadAN_AN0	movlw	low Cur_AN0
-00642 014E 0084 		movwf	FSR0L
-00643 014F 0021  a		MOVLB	Cur_AN0	;banksel
-00642 0150 		BankSel	Cur_AN0	;where the analog stuff is
-00644 0150 1420 		bsf	NewDataAN0
-00645 0151 3004 		movlw	AN1_Val	;next to read
-00646 0152 00F8 		movwf	Param78
-00647 0153 3207 		bra	ReadAN_1
-00648 0154 	;
-00649 0154 30A3 	ReadAN_AN1	movlw	low Cur_AN1
-00650 0155 0084 		movwf	FSR0L
-00651 0156 0021  a		MOVLB	Cur_AN0	;banksel
-00650 0157 		BankSel	Cur_AN0	;where the analog stuff is
-00652 0157 14A0 		bsf	NewDataAN1
-00653 0158 3000 		movlw	AN0_Val	;next to read,
-00654 0159 00F8 		movwf	Param78                ; last one points back to first one
-00655 015A 3200 		bra	ReadAN_1
-00656 015B 	;
-00657 015B 	;
-00658 015B 0021 	ReadAN_1	movlb	0x01	;bank 1
-00659 015C 081B 		MOVF	ADRESL,W
-00660 015D 001A 		MOVWI	FSR0++
-00661 015E 081C 		MOVF	ADRESH,W
-00662 015F 001A 		MOVWI	FSR0++
-00663 0160 	;
-00664 0160 0878 		movf	Param78,W
-00665 0161 1409 		BSF	WREG,0	;ADC ON
-00666 0162 009D 		MOVWF	ADCON0
-00667 0163 3004 		movlw	0x04	;Acquisition time 5uS
-00668 0164 207B 		call	DelayWuS
-00669 0165 149D 		BSF	ADCON0,ADGO	;Start next conversion.
-00670 0166 0020 		movlb	0x00	; bank 0
-00671 0167 0008 		return
-00672 0168 	;
-00673 0168 0021 	ReadAN0_ColdStart	MOVLB	1
-00674 0169 30E0 		MOVLW	b'11100000'	;Right Just, fosc/64
-00675 016A 	;	MOVLW	b'11110000'	;Right Just, Frc
-00676 016A 009E 		MOVWF	ADCON1
-00677 016B 3000 		MOVLW	AN0_Val	;Select AN0
-00678 016C 1409 		BSF	WREG,0	;ADC ON
-00679 016D 009D 		MOVWF	ADCON0
-00680 016E 3004 		movlw	0x04	;Acquisition time 5uS
-00681 016F 207B 		call	DelayWuS
-00682 0170 149D 	ReadAN_3	BSF	ADCON0,GO
-00683 0171 	ReadAN_Rtn:
-00684 0171 0020 	Bank0_Rtn	MOVLB	0
-00685 0172 0008 		Return
-00686 0173 	;
-00687 0173 	;=========================================================================================
-00688 0173 	;
-00689 0173 	;=========================================================================================
-00690 0173 	; call once
-00691 0173 	;=========================================================================================
-00692 0173 	;
-00693 0173 0021 	InitializeIO	MOVLB	0x01	; select bank 1
-00694 0174 1795 		bsf	OPTION_REG,NOT_WPUEN	; disable pullups on port B
-00695 0175 1295 		bcf	OPTION_REG,TMR0CS	; TMR0 clock Fosc/4
-00696 0176 1195 		bcf	OPTION_REG,PSA	; prescaler assigned to TMR0
-00697 0177 1415 		bsf	OPTION_REG,PS0	;111 8mhz/4/256=7812.5hz=128uS/Ct=0.032768S/ISR
-00698 0178 1495 		bsf	OPTION_REG,PS1	;101 8mhz/4/64=31250hz=32uS/Ct=0.008192S/ISR
-00699 0179 1515 		bsf	OPTION_REG,PS2
-00700 017A 	;
-00701 017A 30F0 		MOVLW	OSCCON_Value
-00702 017B 0099 		MOVWF	OSCCON
-00703 017C 3017 		movlw	b'00010111'	; WDT prescaler 1:65536 period is 2 sec (RESET value)
-00704 017D 0097 		movwf	WDTCON
-00705 017E 	;
-00706 017E 0024 		movlb	4	; bank 4
-00707 017F 168C 		bsf	WPUA,WPUA5	;Put a pull up on the MCLR unused pin.
-00708 0180 	;
-00709 0180 0023 		MOVLB	0x03	; bank 3
-00710 0181 3003 		movlw	ANSELA_Val
-00711 0182 008C 		movwf	ANSELA
-00712 0183 3000 		movlw	ANSELB_Val
-00713 0184 008D 		movwf	ANSELB
-00714 0185 	;
-00715 0185 	;Setup T2 for 100/s
-00716 0185 0020 		movlb	0	; bank 0
-00717 0186 304F 		MOVLW	T2CON_Value
-00718 0187 009C 		MOVWF	T2CON
-00719 0188 307D 		MOVLW	PR2_Value
-00720 0189 009B 		MOVWF	PR2
-00721 018A 0021 		movlb	1	; bank 1
-00722 018B 1491 		bsf	PIE1,TMR2IE	; enable Timer 2 interupt
-00723 018C 	;
-00724 018C 	; setup timer 1 for 0.5uS/count
-00725 018C 	;
-00726 018C 0020 		MOVLB	0x00	; bank 0
-00727 018D 3021 		MOVLW	T1CON_Val
+00632 0147 		SKPNZ                                         ;AN1 selected?
+00632 0147 1903      M		BTFSC	STATUS,Z		BTFSC	STATUS,Z
+00633 0148 320C 		bra	ReadAN_AN1             ; Yes
+00634 0149 	;
+00635 0149 	;fall thru to handle unknown
+00636 0149 3000 		movlw	AN0_Val	;next to read
+00637 014A 00F8 		movwf	Param78
+00638 014B 30A1 		movlw	LOW Cur_AN0
+00639 014C 0084 		movwf	FSR0L
+00640 014D 320E 		bra	ReadAN_1
+00641 014E 	;
+00642 014E 30A1 	ReadAN_AN0	movlw	low Cur_AN0
+00643 014F 0084 		movwf	FSR0L
+00644 0150 0021  a		MOVLB	Cur_AN0	;banksel
+00643 0151 		BankSel	Cur_AN0	;where the analog stuff is
+00645 0151 1420 		bsf	NewDataAN0
+00646 0152 3004 		movlw	AN1_Val	;next to read
+00647 0153 00F8 		movwf	Param78
+00648 0154 3207 		bra	ReadAN_1
+00649 0155 	;
+00650 0155 30A3 	ReadAN_AN1	movlw	low Cur_AN1
+00651 0156 0084 		movwf	FSR0L
+00652 0157 0021  a		MOVLB	Cur_AN0	;banksel
+00651 0158 		BankSel	Cur_AN0	;where the analog stuff is
+00653 0158 14A0 		bsf	NewDataAN1
+00654 0159 3000 		movlw	AN0_Val	;next to read,
+00655 015A 00F8 		movwf	Param78                ; last one points back to first one
+00656 015B 3200 		bra	ReadAN_1
+00657 015C 	;
+00658 015C 	;
+00659 015C 0021 	ReadAN_1	movlb	0x01	;bank 1
+00660 015D 081B 		MOVF	ADRESL,W
+00661 015E 001A 		MOVWI	FSR0++
+00662 015F 081C 		MOVF	ADRESH,W
+00663 0160 001A 		MOVWI	FSR0++
+00664 0161 	;
+00665 0161 0878 		movf	Param78,W
+00666 0162 1409 		BSF	WREG,0	;ADC ON
+00667 0163 009D 		MOVWF	ADCON0
+00668 0164 3004 		movlw	0x04	;Acquisition time 5uS
+00669 0165 207B 		call	DelayWuS
+00670 0166 149D 		BSF	ADCON0,ADGO	;Start next conversion.
+00671 0167 0020 		movlb	0x00	; bank 0
+00672 0168 0008 		return
+00673 0169 	;
+00674 0169 0021 	ReadAN0_ColdStart	MOVLB	1
+00675 016A 30E0 		MOVLW	b'11100000'	;Right Just, fosc/64
+00676 016B 	;	MOVLW	b'11110000'	;Right Just, Frc
+00677 016B 009E 		MOVWF	ADCON1
+00678 016C 3000 		MOVLW	AN0_Val	;Select AN0
+00679 016D 1409 		BSF	WREG,0	;ADC ON
+00680 016E 009D 		MOVWF	ADCON0
+00681 016F 3004 		movlw	0x04	;Acquisition time 5uS
+00682 0170 207B 		call	DelayWuS
+00683 0171 149D 	ReadAN_3	BSF	ADCON0,GO
+00684 0172 	ReadAN_Rtn:
+00685 0172 0020 	Bank0_Rtn	MOVLB	0
+00686 0173 0008 		Return
+00687 0174 	;
+00688 0174 	;=========================================================================================
+00689 0174 	;
+00690 0174 	;=========================================================================================
+00691 0174 	; call once
+00692 0174 	;=========================================================================================
+00693 0174 	;
+00694 0174 0021 	InitializeIO	MOVLB	0x01	; select bank 1
+00695 0175 1795 		bsf	OPTION_REG,NOT_WPUEN	; disable pullups on port B
+00696 0176 1295 		bcf	OPTION_REG,TMR0CS	; TMR0 clock Fosc/4
+00697 0177 1195 		bcf	OPTION_REG,PSA	; prescaler assigned to TMR0
+00698 0178 1415 		bsf	OPTION_REG,PS0	;111 8mhz/4/256=7812.5hz=128uS/Ct=0.032768S/ISR
+00699 0179 1495 		bsf	OPTION_REG,PS1	;101 8mhz/4/64=31250hz=32uS/Ct=0.008192S/ISR
+00700 017A 1515 		bsf	OPTION_REG,PS2
+00701 017B 	;
+00702 017B 30F0 		MOVLW	OSCCON_Value
+00703 017C 0099 		MOVWF	OSCCON
+00704 017D 3017 		movlw	b'00010111'	; WDT prescaler 1:65536 period is 2 sec (RESET value)
+00705 017E 0097 		movwf	WDTCON
+00706 017F 	;
+00707 017F 0024 		movlb	4	; bank 4
+00708 0180 168C 		bsf	WPUA,WPUA5	;Put a pull up on the MCLR unused pin.
+00709 0181 	;
+00710 0181 0023 		MOVLB	0x03	; bank 3
+00711 0182 3003 		movlw	ANSELA_Val
+00712 0183 008C 		movwf	ANSELA
+00713 0184 3000 		movlw	ANSELB_Val
+00714 0185 008D 		movwf	ANSELB
+00715 0186 	;
+00716 0186 	;Setup T2 for 100/s
+00717 0186 0020 		movlb	0	; bank 0
+00718 0187 304F 		MOVLW	T2CON_Value
+00719 0188 009C 		MOVWF	T2CON
+00720 0189 307D 		MOVLW	PR2_Value
+00721 018A 009B 		MOVWF	PR2
+00722 018B 0021 		movlb	1	; bank 1
+00723 018C 1491 		bsf	PIE1,TMR2IE	; enable Timer 2 interupt
+00724 018D 	;
+00725 018D 	; setup timer 1 for 0.5uS/count
+00726 018D 	;
+00727 018D 0020 		MOVLB	0x00	; bank 0
 DCC_Booster.asm                                                       Page: 11
 /Users/davidflynn/Projects/DCC Booster DMFE/DCC-Booster/Firmware/
 
-00728 018E 0098 		MOVWF	T1CON
-00729 018F 1399 		bcf	T1GCON,TMR1GE	;always count
-00730 0190 	;	
-00731 0190 	; clear memory to zero
-00732 0190 2033 		CALL	ClearRam
-00733 0191 0064 		CLRWDT
-00734 0192 	;	CALL	CopyToRam
-00735 0192 	;
-00736 0192 	;
-00737 0192 	;
-00738 0192 0020 		MOVLB	0x00	;Bank 0
-00739 0193 	; setup data ports
-00740 0193 3011 		movlw	PortBValue
-00741 0194 008D 		movwf	PORTB	;init port B
-00742 0195 3000 		movlw	PortAValue
-00743 0196 008C 		movwf	PORTA
-00744 0197 0021 		MOVLB	0x01	; bank 1
-00745 0198 30A7 		movlw	PortADDRBits
-00746 0199 008C 		movwf	TRISA
-00747 019A 30DF 		movlw	PortBDDRBits	;setup for programer
-00748 019B 008D 		movwf	TRISB
-00749 019C 	;
-00750 019C 0064 		CLRWDT
-00751 019D 	;-----------------------
-00752 019D 	;
-00753 019D 0020 		MOVLB	0x00
-00754 019E 3064 		MOVLW	LEDTIME
-00755 019F 00A0 		MOVWF	SysLED_Time
-00756 01A0 3001 		movlw	0x01
-00757 01A1 00A3 		movwf	SysLEDCount	;start blinking right away
-00758 01A2 3064 		movlw	.100
-00759 01A3 00AC 		movwf	Timer4Lo	;ignor buttons for 1st second
-00760 01A4 	;
-00761 01A4 	;
-00762 01A4 0064 		CLRWDT
-00763 01A5 	;
-00764 01A5 	;
-00765 01A5 170B 		bsf	INTCON,PEIE	; enable periferal interupts
-00766 01A6 178B 		bsf	INTCON,GIE	; enable interupts
-00767 01A7 	;
-00768 01A7 0008 		return
-00769 01A8 	;
-00770 01A8 	;=========================================================================================
-00771 01A8 	;=========================================================================================
-00772 01A8 	;
-00773 01A8 	;
-00774 01A8 	;
-00775 01A8 		END
+00728 018E 3021 		MOVLW	T1CON_Val
+00729 018F 0098 		MOVWF	T1CON
+00730 0190 1399 		bcf	T1GCON,TMR1GE	;always count
+00731 0191 	;	
+00732 0191 	; clear memory to zero
+00733 0191 2033 		CALL	ClearRam
+00734 0192 0064 		CLRWDT
+00735 0193 	;	CALL	CopyToRam
+00736 0193 	;
+00737 0193 	;
+00738 0193 	;
+00739 0193 0020 		MOVLB	0x00	;Bank 0
+00740 0194 	; setup data ports
+00741 0194 3011 		movlw	PortBValue
+00742 0195 008D 		movwf	PORTB	;init port B
+00743 0196 3000 		movlw	PortAValue
+00744 0197 008C 		movwf	PORTA
+00745 0198 0021 		MOVLB	0x01	; bank 1
+00746 0199 30A7 		movlw	PortADDRBits
+00747 019A 008C 		movwf	TRISA
+00748 019B 30DF 		movlw	PortBDDRBits	;setup for programer
+00749 019C 008D 		movwf	TRISB
+00750 019D 	;
+00751 019D 0064 		CLRWDT
+00752 019E 	;-----------------------
+00753 019E 	;
+00754 019E 0020 		MOVLB	0x00
+00755 019F 3064 		MOVLW	LEDTIME
+00756 01A0 00A0 		MOVWF	SysLED_Time
+00757 01A1 3001 		movlw	0x01
+00758 01A2 00A3 		movwf	SysLEDCount	;start blinking right away
+00759 01A3 3064 		movlw	.100
+00760 01A4 00AC 		movwf	Timer4Lo	;ignor buttons for 1st second
+00761 01A5 	;
+00762 01A5 	;
+00763 01A5 0064 		CLRWDT
+00764 01A6 	;
+00765 01A6 	;
+00766 01A6 170B 		bsf	INTCON,PEIE	; enable periferal interupts
+00767 01A7 178B 		bsf	INTCON,GIE	; enable interupts
+00768 01A8 	;
+00769 01A8 0008 		return
+00770 01A9 	;
+00771 01A9 	;=========================================================================================
+00772 01A9 	;=========================================================================================
+00773 01A9 	;
+00774 01A9 	;
+00775 01A9 	;
+00776 01A9 		END
 
 X-Ref Table
 ADCON0	009D 	ReadAN, ReadAN_1, ReadAN0_ColdStart
@@ -1119,10 +1120,10 @@ Drv_Enable	LATA,6	NoOC_Hold, ML_EnableDrv
 Drv_StatusLED	LATB,5	NoOC_Hold, ML_EnableDrv
 EEADR	0191 	DelayWuS_Loop
 EEAddrTemp	0024 	DelayWuS_Loop
-EECON1	0195 	DelayWuS_Loop, EEWriteLoop
 DCC_Booster.asm   X-Ref Table                                            Page: 12
 /Users/davidflynn/Projects/DCC Booster DMFE/DCC-Booster/Firmware/
 
+EECON1	0195 	DelayWuS_Loop, EEWriteLoop
 EECON2	0196 	DelayWuS_Loop
 EEDAT	0193 	DelayWuS_Loop
 EEDataTemp	0025 	DelayWuS_Loop
@@ -1141,26 +1142,26 @@ IRQ_DCCSig_End ^	0032 	SystemTick_end
 InVoltsLowHold	StatusFlags2,4	DDC_SigHoldCtrl_End, DoInVoltsTest, NoOC_Hold
 InVoltsOK	StatusFlags,5	DoInVoltsTest, NoOC_Hold
 InVoltsTest_End ^	00E9 	DoInVoltsTest
-InitializeIO ^	0173 	start
+InitializeIO ^	0174 	start
 InputVolts	Cur_AN0	DoInVoltsTest
 LATA	010C 	SystemBlink_end, NoOC_Hold, ML_EnableDrv
 LATB	010D 	NoOC_Hold, ML_EnableDrv
 LEDErrorTime	000A 	ML_EnableDrv_End
 LEDTIME	0064 	ML_EnableDrv_End, InitializeIO
-ML_EnableDrv ^	012C 	NoOC_Hold
-ML_EnableDrv_End ^	012F 	NoOC_Hold
+ML_EnableDrv ^	012D 	NoOC_Hold
+ML_EnableDrv_End ^	0130 	NoOC_Hold
 MainLoop ^	00BC 	ML_EnableDrv_End
 MaxCurrent	00A5 	SetCurrent_L1, OC_Test
 MinInVolts	0280 	DoInVoltsTest
 NOT_WPUEN	0007 	InitializeIO
 NewDataAN0	ANFlags,0	ReadAN_AN0
 NewDataAN1	ANFlags,1	InVoltsTest_End, ReadAN_AN1
-NoOC_Hold ^	011B 	OC_Test_End
+NoOC_Hold ^	011C 	OC_Test_End
 OC_Test ^	00F9 	InVoltsTest_End
-OC_Test_End ^	0115 	InVoltsTest_End, OC_Test, OC_Test_OC, OC_Test_FirstOC
-OC_Test_FirstOC ^	010E 	OC_Test
-OC_Test_OC ^	0109 	InVoltsTest_End
-OC_Test_OK ^	0114 	OC_Test, OC_Test_FirstOC
+OC_Test_End ^	0116 	InVoltsTest_End, OC_Test, OC_Test_OC, OC_Test_FirstOC
+OC_Test_FirstOC ^	010F 	OC_Test
+OC_Test_OC ^	010A 	InVoltsTest_End
+OC_Test_OK ^	0115 	OC_Test, OC_Test_FirstOC
 OPTION_REG	0095 	InitializeIO
 OSCCON	0099 	InitializeIO
 OSCCON_Value	00F0 	InitializeIO
@@ -1189,12 +1190,12 @@ PortAValue	0000 	InitializeIO
 PortBDDRBits	00DF 	InitializeIO
 PortBValue	0011 	InitializeIO
 RD	0000 	DelayWuS_Loop
-ReadAN ^	0137 	ML_EnableDrv_End
-ReadAN0_ColdStart ^	0168 	start, ReadAN
-ReadAN_1 ^	015B 	ReadAN, ReadAN_AN0, ReadAN_AN1
-ReadAN_AN0 ^	014D 	ReadAN
-ReadAN_AN1 ^	0154 	ReadAN
-ReadAN_Rtn ^	0171 	ReadAN
+ReadAN ^	0138 	ML_EnableDrv_End
+ReadAN0_ColdStart ^	0169 	start, ReadAN
+ReadAN_1 ^	015C 	ReadAN, ReadAN_AN0, ReadAN_AN1
+ReadAN_AN0 ^	014E 	ReadAN
+ReadAN_AN1 ^	0155 	ReadAN
+ReadAN_Rtn ^	0172 	ReadAN
 STATUS	0003 	, DecTimer, DCCSigTest_End, DDC_SigHoldCtrl_End, DoInVoltsTest, InVoltsTest_End
 		OC_Test, OC_Test_End, ReadAN
 SW1_Flag	SysFlags,0	start
@@ -1221,10 +1222,10 @@ SystemBlink_Std ^	0015
 SystemBlink_end ^	001A 	
 SystemTick_end ^	002D 	
 T1CON	0018 	InitializeIO
-T1CON_Val	0021 	InitializeIO
 DCC_Booster.asm   X-Ref Table                                            Page: 13
 /Users/davidflynn/Projects/DCC Booster DMFE/DCC-Booster/Firmware/
 
+T1CON_Val	0021 	InitializeIO
 T1GCON	0019 	InitializeIO
 T2CON	001C 	InitializeIO
 T2CON_Value	004F 	InitializeIO
@@ -1261,7 +1262,7 @@ start ^	00A4
  
 
 X-Ref Table (The UnCalled)
-Bank0_Rtn !	0171 	
+Bank0_Rtn !	0172 	
 Delay100uS !	0078 	
 Delay10uS !	0076 	
 Delay40uS !	007A 	
@@ -1272,7 +1273,7 @@ EEWriteW !	008B
 IRQ_DCCSig !	002D 	
 IRQ_DCCSig_Done !	0030 	
 ProgStartVector !	0000 	
-ReadAN_3 !	0170 	
+ReadAN_3 !	0171 	
 SystemBlink_DoIt !	0017 	
 TestT1_Zero !	0072 	
 TestT3_Zero !	006A 	
@@ -1287,10 +1288,10 @@ Memory Usage Map ('X' = Used, '-' = Unused)
 00C0  : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
 0100  : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
 0140  : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
-0180  : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXX-------- ----------------
+0180  : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXX------- ----------------
  
-Program Memory Words Used:423
-Program Memory Words Free:7769
+Program Memory Words Used:424
+Program Memory Words Free:7768
  
 UserID
 8000  :XXXX
