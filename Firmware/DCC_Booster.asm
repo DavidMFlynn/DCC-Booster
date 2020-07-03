@@ -2,7 +2,7 @@
 ;
 ;    Filename:      DCC_Booster.asm
 ;    Created:       1/12/2020
-;    File Version:  1.0d3   5/27/2020
+;    File Version:  1.0d4   7/3/2020
 ;
 ;    Author:        David M. Flynn
 ;    Company:       Oxford V.U.E., Inc.
@@ -17,6 +17,7 @@
 ;	
 ;
 ;    History:
+; 1.0d4   7/3/2020     Adjusted ISel for 0.25 Amp increments and 2 Amp short detect.
 ; 1.0d3   5/27/2020    Added Short Circuit Instant Off. kShortCircuitCurrent
 ; 1.0d2   2/29/2020	Ready to do a little testing.
 ; 1.0d1   1/12/2020	First code.
@@ -234,9 +235,11 @@ T1CON_Val	EQU	b'00100001'	;Fosc=32MHz, PreScale=4,Fosc/4,Timer ON
 #Define	NewDataAN1	ANFlags,1
 ;
 MinInVolts             EQU                    .640                   ;3.1V * 4.19v/v = 13v
-;0.85Amp=0.63Volt, 0.0048828Volt/cnt, 152cnt/Amp
-kMinCurrent            EQU                    .32                    ;0.21Amp..1.68Amp test value 
-kShortCircuitCurrent   EQU                    .304                   ;2Amps = 304cnt, 3Amps = 456cnt
+;0.85Amp=0.63Volt, 0.0048828Volt/cnt, 152cnt/Amp                     ;Rev A
+;0.768Amp=0.636Volt, 0.0048828Volt/cnt, 0.828V/Amp, 170cnt/Amp        ;Rev B
+;kMinCurrent            EQU                    .32                    ;0.18Amp..1.46Amp test value 
+kMinCurrent            EQU                    .42                    ;0.25Amp..1.98Amp
+kShortCircuitCurrent   EQU                    .340                   ;2Amps = 340cnt, 3Amps = 510cnt
 ;
 ;================================================================================================
 ;  Bank2 Ram 120h-16Fh 80 Bytes

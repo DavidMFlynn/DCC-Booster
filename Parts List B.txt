@@ -30,7 +30,7 @@ D20	LED Green x3 (2)	754-1289-ND	WP934SA/3GD
 FB1,FB2                100Ω 1812              732-3431-1-ND          74279226101
 TVS1                   TVS 17V                SMBJ17CA-FDICT-ND      SMBJ17CA-13-F                                                                    
 
-C1,C5,C7,C12,C13,
+C1,C5,C7,C13,
 C14,C15,C16,C18,C19,
 C20,C21,C22	0.1uf 50v Chip 0805 (13)
 C2	10uf 50v Chip          587-5961-1-ND          UMK325BJ106KMHP        SMD 1210
@@ -39,6 +39,7 @@ C4	470uf 63v Electrolytic	493-1949-ND            UPW1J471MHD3
 C6	4700uf 25v Electrolytic 1189-1732-ND          25PK4700MEFC16X25
 C8,C9                  1.0uF poly
 C10,C11                6.8uF Tant
+C12                    100pf 25V 0805 (Optional)
 C17                    1.0uF 25V 0805
 C23,C24                220uf 50v Electrolytic PCE3921CT-ND	EEE-1HA221P            SMT 10mm
 C25,C26                0.01uF 50V 0805        1276-1078-1-ND         CL21B103KBCNNNC
@@ -66,4 +67,6 @@ R32                    100K 0805
 R37,R38                100Ω 0805
 
 Notes:
+Voltage: VOut=(R3/R2+1)*5.05V 6.8K/3.3K = 15.32V @ TP+15V = 14.5 VAC no load = 13.55VAC @ 0.75A
+                       6.8K/3.0K = 16.4V
 Changes for Rev ?:
