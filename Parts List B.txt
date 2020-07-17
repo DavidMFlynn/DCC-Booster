@@ -3,6 +3,8 @@ Parts List for DCC Booster Rev B, DMFE 2020
 Ref. Des. 	Desc.	DK	Mfg.
 -----------------------------------------------------------------------------------
 U1	Switching Reg. TO220-5	MC34167TVGOS-ND	MC34167TVG
+                       Heat Sink              HS336-ND
+                       Heat Sink              294-1082-ND
 U2	Switching Reg. 5v	102-5018-ND	P78E05-1000
 U3                     74HC08 SOIC-14
 U4,U5                  IR2101S 8SOIC          IR2101SPBFCT-ND        IR2101STRPBF
@@ -22,7 +24,7 @@ D7,D10,D11,D12,D13	Diode Schottky (10) 	SBR545D1-13DICT-ND	SBR545D1-13          
 D5,D27                 Diode 1A SMA
 D8,D9,D14,
 D21,D22,D23,D24        1N4148W                SOD-123
-D25,D26                Zener 15V SOD-123
+D25,D26                Zener 15V SOD-123      BZT52C15-FDICT-ND      BZT52C15-7-F
 
 D15,D16,D17,D18,D19,
 D20	LED Green x3 (2)	754-1289-ND	WP934SA/3GD
@@ -37,9 +39,9 @@ C2	10uf 50v Chip          587-5961-1-ND          UMK325BJ106KMHP        SMD 1210
 C3	22uf 25v Chip          1276-3373-1-ND         CL32A226MAJNNNE        SMD 1210
 C4	470uf 63v Electrolytic	493-1949-ND            UPW1J471MHD3
 C6	4700uf 25v Electrolytic 1189-1732-ND          25PK4700MEFC16X25
-C8,C9                  1.0uF poly
-C10,C11                6.8uF Tant
-C12                    100pf 25V 0805 (Optional)
+C8,C9                  1.0uF 63V poly         399-5447-1-ND          R82DC4100DQ60J
+C10,C11                10uF 25V Tant          478-5257-1-ND          TAJB106K025RNJ
+C12                    100pf 25V 0805 (Optional) 399-1122-1-ND       C0805C101J5GACTU
 C17                    1.0uF 25V 0805
 C23,C24                220uf 50v Electrolytic PCE3921CT-ND	EEE-1HA221P            SMT 10mm
 C25,C26                0.01uF 50V 0805        1276-1078-1-ND         CL21B103KBCNNNC
@@ -48,6 +50,7 @@ SW1	Switch DIP 5	GH7138-ND	76PSB05T
 J1	Header 4 pin	ED2830-ND	OSTOQ045451
 J1.1	Plug 4 pin	ED2910-ND	OSTTJ045153
 J2,J3	RJ-9 Jack	AE10381-ND	A-2004-3-4-LP-N-R
+                       RJ-9 PLUG              AE10314-ND             A-MO 4/4 F50
 
 R1	68K 0805
 R2	3.3K 0805
@@ -59,7 +62,7 @@ R9,R18,R19,R20,R21,
 R31                    1.0K 0805 (6)
 R10,R11                470Ω 0805 (2)
 R12,R13                4.7K 0.75W 2010 (2)    RMCF2010JT4K70CT-ND    RMCF2010JT4K70
-R15,R34                0.1Ω 1W 2512 (2)
+R15,R34                0.1Ω 1W 2512 (2)       CRA2512-FZ-R100ELFCT-ND CRA2512-FZ-R100ELF
 R22                    15K 0805
 R23                    4.7K 0805
 R24,R25,R26,R27,R28    47K 0805 (5)
