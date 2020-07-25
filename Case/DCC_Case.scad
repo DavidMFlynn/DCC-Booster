@@ -3,10 +3,11 @@
 // by Dave Flynn
 // Filename: DCC_Case.scad
 // Created: 7/2/2020
-// Version: 1.0b1 7/2/2020
+// Version: 1.0b2 7/24/2020
 // Units: mm
 // ************************************************
 //  ***** History *****
+// 1.0b2 7/24/2020 Shorter bolt bosses on top cover.
 // 1.0b1 7/2/2020 First code
 // ************************************************
 //  ***** for STL Output *****
@@ -88,6 +89,33 @@ module FaceHoles(IsBottom=true){
 module CaseTop(){
 	Top_h=CaseTop_t+PCB_Parts_h+Ledge_h-BaseWall_h;
 	
+	/*
+	// Back mount???
+	SideMount_t=5;
+	SideMount_h=12;
+	
+	if (HasMount==true) difference(){
+		union(){
+		hull(){
+			translate([Case_X/2-CaseWall_t-1,Case_Y/2-CaseWall_t-1,Top_h-SideMount_h]){
+				cylinder(d=SideMount_t,h=SideMount_h);
+				translate([20,10,0]) cylinder(d=SideMount_t,h=SideMount_h);
+				
+			} 
+		} // hull
+		hull(){
+			translate([Case_X/2-CaseWall_t-1,Case_Y/2-CaseWall_t-1,Top_h-SideMount_h]){
+				
+				translate([20,10,0]) cylinder(d=SideMount_t,h=SideMount_h);
+				translate([20,10+SideMount_h,0]) cylinder(d=SideMount_t,h=SideMount_h);
+			} 
+		} // hull
+		} // union
+		
+		translate([Case_X/2-CaseWall_t-1,Case_Y/2-CaseWall_t-1,Top_h-SideMount_h/2]) translate([20-3,10+SideMount_h/2+2.5,0]) rotate([0,-90,0]) Bolt6ClearHole();
+	} // difference
+	/**/
+	
 	difference(){
 		RoundRect(X=Case_X,Y=Case_Y,Z=Top_h,R=CaseWall_t+1);
 		
@@ -112,6 +140,7 @@ module CaseTop(){
 	difference(){
 		union(){
 			
+			//connect bolt bosses to corner
 			hull(){
 				translate([-PCB_x/2+HoleInset,-PCB_y/2+HoleInset,Ledge_h]) cylinder(d=3,h=Top_h-Ledge_h);
 				translate([-Case_X/2+CaseWall_t/2+1.5,-Case_Y/2+CaseWall_t/2+1.5,Ledge_h]) cylinder(d=3,h=Top_h-Ledge_h);
@@ -128,11 +157,14 @@ module CaseTop(){
 				translate([PCB_x/2-HoleInset,PCB_y/2-HoleInset,Ledge_h]) cylinder(d=3,h=Top_h-Ledge_h);
 				translate([Case_X/2-CaseWall_t/2-1.5,Case_Y/2-CaseWall_t/2-1.5,Ledge_h]) cylinder(d=3,h=Top_h-Ledge_h);
 				}
-			translate([-PCB_x/2+HoleInset,-PCB_y/2+HoleInset,-BaseWall_h]) cylinder(d=10,h=Top_h+BaseWall_h);
-			translate([-PCB_x/2+HoleInset,PCB_y/2-HoleInset,-BaseWall_h]) cylinder(d=10,h=Top_h+BaseWall_h);
-			translate([PCB_x/2-HoleInset,-PCB_y/2+HoleInset,-BaseWall_h]) cylinder(d=10,h=Top_h+BaseWall_h);
-			translate([PCB_x/2-HoleInset,PCB_y/2-HoleInset,-BaseWall_h]) cylinder(d=10,h=Top_h+BaseWall_h);
+				
+			// Bolt bosses
+			translate([-PCB_x/2+HoleInset,-PCB_y/2+HoleInset,-BaseWall_h+Ledge_h/2]) cylinder(d=10,h=Top_h+BaseWall_h-Ledge_h/2);
+			translate([-PCB_x/2+HoleInset,PCB_y/2-HoleInset,-BaseWall_h+Ledge_h/2]) cylinder(d=10,h=Top_h+BaseWall_h-Ledge_h/2);
+			translate([PCB_x/2-HoleInset,-PCB_y/2+HoleInset,-BaseWall_h+Ledge_h/2]) cylinder(d=10,h=Top_h+BaseWall_h-Ledge_h/2);
+			translate([PCB_x/2-HoleInset,PCB_y/2-HoleInset,-BaseWall_h+Ledge_h/2]) cylinder(d=10,h=Top_h+BaseWall_h-Ledge_h/2);
 		}
+		
 		// PCB mounting holes
 		translate([-PCB_x/2+HoleInset,-PCB_y/2+HoleInset,-BaseWall_h+10]) Bolt4HeadHole(depth=8,lHead=30);
 		translate([-PCB_x/2+HoleInset,PCB_y/2-HoleInset,-BaseWall_h+10]) Bolt4HeadHole(depth=8,lHead=30);
@@ -141,7 +173,8 @@ module CaseTop(){
 	} // difference
 } // CaseTop
 
-//translate([0,0,CaseBot_t+Basement_h+PCB_z+BaseWall_h-Ledge_h+Overlap]) CaseTop();
+//translate([0,0,CaseBot_t+Basement_h+PCB_z+BaseWall_h-Ledge_h+Overlap])CaseTop();
+//CaseBottom(ShowPCB=true);
 
 module CaseBottom(ShowPCB=true){
 	

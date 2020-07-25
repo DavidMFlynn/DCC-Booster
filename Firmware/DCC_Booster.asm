@@ -2,7 +2,7 @@
 ;
 ;    Filename:      DCC_Booster.asm
 ;    Created:       1/12/2020
-;    File Version:  1.0d4   7/3/2020
+;    File Version:  1.0b1   7/24/2020
 ;
 ;    Author:        David M. Flynn
 ;    Company:       Oxford V.U.E., Inc.
@@ -17,6 +17,7 @@
 ;	
 ;
 ;    History:
+; 1.0b1   7/24/2020    Added Auto Reverse when SW1-4 is ON.
 ; 1.0d4   7/3/2020     Adjusted ISel for 0.25 Amp increments and 2 Amp short detect.
 ; 1.0d3   5/27/2020    Added Short Circuit Instant Off. kShortCircuitCurrent
 ; 1.0d2   2/29/2020	Ready to do a little testing.
@@ -208,6 +209,8 @@ T1CON_Val	EQU	b'00100001'	;Fosc=32MHz, PreScale=4,Fosc/4,Timer ON
 #Define                DCC_Sig_Lvl            StatusFlags,3          ;old signal level
 #Define                DCC_Sig_Active         StatusFlags,4          ;We have a DCC signal
 #Define                InVoltsOK              StatusFlags,5          ;Set when input volts are >= 13V
+#Define                DCC_Revesed            StatusFlags,6          ;DCC_Pole is Active
+#Define                DCC_RevOCTrigger       StatusFlags,7          ;Set when 1st short is detected.
 ;
 #Define                OutCurrentOK           StatusFlags2,0          ;Set when output current is OK
 #Define                OverCurrentHold        StatusFlags2,1
@@ -407,6 +410,10 @@ start	call	InitializeIO
                        bsf                    SW2_Flag
                        btfss                  SW3_In                 ;Current Select 2 (Active Low Input)
                        bsf                    SW3_Flag
+                       btfss                  SW4_In                 ;Reverser mode.
+                       bsf                    SW4_Flag
+                       btfss                  SW5_In                 ;Test mode?. not used 7/24/2020
+                       bsf                    SW5_Flag
 ; set current limit value
                        movf                   SysFlags,W
                        andlw                  0x07
@@ -493,9 +500,82 @@ DoInVoltsTest          movlb                  1                      ;bank 1
                        movwf                  Timer2Lo
 ;
 InVoltsTest_End:
-;---------------------
-; Test Short Circuit and for current too high
+;=======================================
+                       btfss                  SW4_Flag
+                       goto                   NoRevShortTest
+;
+;=======================================
+; Reverser mode over current test
                        movlb                  1                      ;bank 1
+                       btfss                  NewDataAN1
+                       bra                    Rev_OC_Test_End
+;
+                       bcf                    NewDataAN1
+;
+; Short Circuit Test >kShortCircuitCurrent
+                       movlw                  LOW kShortCircuitCurrent
+                       subwf                  OuputCurrent,W
+                       movlw                  HIGH kShortCircuitCurrent
+                       subwfb                 OuputCurrent+1,W
+                       movlb                  0                      ;bank 0
+                       SKPB                                          ;kShortCircuitCurrent<=OuputCurrent?
+                       bcf                    OutCurrentOK           ; Yes, Current too high
+                       SKPNB                                         ;kShortCircuitCurrent>OuputCurrent?
+                       bsf                    OutCurrentOK           ; Yes, Current below max
+;
+                       btfsc                  OutCurrentOK
+                       bra                    Rev_OC_Test
+; We are shorted or close to it.
+                       bra                    Rev_OC_Test_OC             ;Stop NOW!
+;
+; High Current Test
+Rev_OC_Test            movlb                  1                      ;bank 1
+                       movf                   MaxCurrent,W
+                       subwf                  OuputCurrent,W
+                       movf                   MaxCurrent+1,W
+                       subwfb                 OuputCurrent+1,W
+                       movlb                  0                      ;bank 0
+                       SKPB                                          ;MaxCurrent<=OuputCurrent?
+                       bcf                    OutCurrentOK           ; Yes, Current too high
+                       SKPNB                                         ;MaxCurrent>OuputCurrent?
+                       bsf                    OutCurrentOK           ; Yes, Current below max
+;
+                       btfsc                  OutCurrentOK
+                       bra                    Rev_OC_Test_OK
+                       btfss                  OverCurrentDelay
+                       bra                    Rev_OC_Test_FirstOC
+                       movf                   Timer2Lo,W
+                       SKPZ                                          ;Timed out?
+                       bra                    Rev_OC_Test_End        ; No
+;
+Rev_OC_Test_OC         bsf                    OverCurrentHold        ; Yes
+                       bcf                    OverCurrentDelay
+                       movlw                  .100
+                       movwf                  Timer2Lo
+                       bra                    Rev_OC_Test_End
+;
+Rev_OC_Test_FirstOC    btfsc                  OverCurrentHold
+                       bra                    Rev_OC_Test_OK
+                       bsf                    OverCurrentDelay
+                       movlw                  .5
+                       movwf                  Timer2Lo
+                       bra                    Rev_OC_Test_End
+Rev_OC_Test_OK         bcf                    OverCurrentDelay                       
+;
+Rev_OC_Test_End        movlb                  0                      ;bank 0
+;
+; Clear over current hold
+                       btfss                  OverCurrentHold
+                       bra                    Rev_NoOC_Hold
+                       call                   TestT2_Zero
+                       SKPNZ
+                       bcf                    OverCurrentHold
+Rev_NoOC_Hold:
+                       goto                   ML_SetClrError
+;
+;========================================
+; No Reverser, Test Short Circuit and for current too high
+NoRevShortTest         movlb                  1                      ;bank 1
                        btfss                  NewDataAN1
                        bra                    OC_Test_End
 ;
@@ -561,7 +641,7 @@ OC_Test_End            movlb                  0                      ;bank 0
 NoOC_Hold:                       
 ;---------------------
 ; Set / clear error condition
-                       bcf                    DCC_ErrorFlag
+ML_SetClrError         bcf                    DCC_ErrorFlag
 ;
                        btfss                  InVoltsOK              ;Input volts OK?
                        bsf                    DCC_ErrorFlag          ; No
