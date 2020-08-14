@@ -56,7 +56,7 @@
 ;   Pin 14 (Vcc) +5 volts
 ;   Pin 15 (RA6) MOSFET Driver Enable (Active High Output)
 ;   Pin 16 (RA7/CCP2) System LED (Active Low Output)(System LED)
-;   Pin 17 (RA0/AN0) Input voltage sensing analog input
+;   Pin 17 (RA0/AN0) 15V Sense analog input
 ;   Pin 18 (RA1/AN1) Current sensing analog input
 ;
 ;====================================================================================================
@@ -466,8 +466,8 @@ DCCSigTest_End:
                        SKPNZ                                         ;Time up?
                        bcf                    DCC_Sig_Hold           ; Yes, clear hold and do test
 ;
-DoDCCSigHoldTest       btfsc                  DCC_Sig_Active
-                       bra                    DDC_SigHoldCtrl_End
+DoDCCSigHoldTest       btfsc                  DCC_Sig_Active         ;DCC Signal is seen?
+                       bra                    DDC_SigHoldCtrl_End    ; No
                        bsf                    DCC_Sig_Hold
                        movlw                  .100                   ;Wait 1 second
                        movwf                  Timer2Lo
