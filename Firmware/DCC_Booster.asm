@@ -2,7 +2,7 @@
 ;
 ;    Filename:      DCC_Booster.asm
 ;    Created:       1/12/2020
-;    File Version:  1.0b1   7/24/2020
+;    File Version:  1.0b2   7/31/2021
 ;
 ;    Author:        David M. Flynn
 ;    Company:       Oxford V.U.E., Inc.
@@ -17,6 +17,7 @@
 ;	
 ;
 ;    History:
+; 1.0b2   7/31/2021	Changed Config.
 ; 1.0b1   7/24/2020    Added Auto Reverse when SW1-4 is ON.
 ; 1.0d4   7/3/2020     Adjusted ISel for 0.25 Amp increments and 2 Amp short detect.
 ; 1.0d3   5/27/2020    Added Short Circuit Instant Off. kShortCircuitCurrent
@@ -67,31 +68,31 @@
 	include	p16f1847.inc	; processor specific variable definitions
 	list
 ;
-	__CONFIG _CONFIG1,_FOSC_INTOSC & _WDTE_OFF & _MCLRE_OFF & _IESO_OFF
+; '__CONFIG' directive is used to embed configuration data within .asm file.
+; The lables following the directive are located in the respective .inc file.
+; See respective data sheet for additional information on configuration word.
+;
+	__CONFIG _CONFIG1,_FOSC_INTOSC & _WDTE_ON & _PWRTE_ON & _MCLRE_OFF & _BOREN_ON & _IESO_OFF & _FCMEN_OFF
 ;
 ;
 ; INTOSC oscillator: I/O function on CLKIN pin
-; WDT disabled
-; PWRT disabled
+; WDT Enabled
+; PWRT Enabled
 ; MCLR/VPP pin function is digital input
 ; Program memory code protection is disabled
 ; Data memory code protection is disabled
 ; Brown-out Reset enabled
 ; CLKOUT function is disabled. I/O or oscillator function on the CLKOUT pin
 ; Internal/External Switchover mode is disabled
-; Fail-Safe Clock Monitor is enabled
+; Fail-Safe Clock Monitor is disabled
 ;
-	__CONFIG _CONFIG2,_WRT_OFF & _PLLEN_ON & _LVP_OFF
+	__CONFIG _CONFIG2,_WRT_OFF & _PLLEN_ON & _STVREN_ON & _BORV_HI & _LVP_OFF
 ;
 ; Write protection off
 ; 4x PLL Enabled
 ; Stack Overflow or Underflow will cause a Reset
-; Brown-out Reset Voltage (Vbor), low trip point selected.
-; Low-voltage programming enabled
-;
-; '__CONFIG' directive is used to embed configuration data within .asm file.
-; The lables following the directive are located in the respective .inc file.
-; See respective data sheet for additional information on configuration word.
+; Brown-out Reset Voltage (Vbor), high trip point selected.
+; Low-voltage programming disabled
 ;
 	constant	oldCode=0
 	constant	useRS232=0
